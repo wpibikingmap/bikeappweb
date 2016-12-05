@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Geocoding service</title>
+    <meta name="viewport" content="initial-scale=1.0, user-scalable=no">
+    <meta charset="utf-8">
+    <style>
+    /* Always set the map height explicitly to define the size of the div
+     * element that contains the map. */
+    #map {
+      height: 100%;
+    }
+    /* Optional: Makes the sample page fill the window. */
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+    }
+    #floating-panel {
+      position: absolute;
+      top: 10px;
+      left: 25%;
+      z-index: 5;
+      background-color: #fff;
+      padding: 5px;
+      border: 1px solid #999;
+      text-align: center;
+      font-family: 'Roboto','sans-serif';
+      line-height: 30px;
+      padding-left: 10px;
+    }
+    #right-panel {
+      font-family: 'Roboto','sans-serif';
+      line-height: 30px;
+      padding-left: 10px;
+    }
+
+    #right-panel select, #right-panel input {
+      font-size: 15px;
+    }
+
+    #right-panel select {
+      width: 100%;
+    }
+
+    #right-panel i {
+      font-size: 12px;
+    }
+    #right-panel {
+      height: 100%;
+      float: right;
+      width: 390px;
+      overflow: auto;
+    }
+    #map {
+      margin-right: 400px;
+    }
+    #floating-panel {
+      background: #fff;
+      padding: 5px;
+      font-size: 14px;
+      font-family: Arial;
+      border: 1px solid #ccc;
+      box-shadow: 0 2px 2px rgba(33, 33, 33, 0.4);
+      display: none;
+    }
+    @media print {
+      #map {
+        height: 500px;
+        margin: 0;
+      }
+      #right-panel {
+        float: none;
+        width: auto;
+      }
+    }
+    </style>
+  </head>
+  <body>
+    <div id="floating-panel">
+      <input id="start_address" type="textbox" value="City Hall">
+      <input id="end_address" type="textbox" value="WPI">
+      <input id="submit" type="button" value="Directions"> <br>
+
+      You can create parking icons by clicking on the map. <br> They don't save. <br>
+      <input id="traffic_radio" type="radio" name="layer_display" value="traffic"> Show Traffic <br>
+      <input id="bike_radio" type="radio" name="layer_display" value="bicycle" checked> Show Bicycling <br>
+    </div>
+    <div id="right-panel"></div>
+    <div id="map"></div>
+    <script>
+//var service = new google.maps.DirectionsService();
+var geocoded = false;
+function initMap() {
+  var iconBase = 'https://maps.google.com/mapfiles/kml/shapes/';
+  var icons = {
+    parking: {
+      icon: iconBase + 'parking_lot_maps.png'
+    },
+    library: {
+      icon: iconBase + 'library_maps.png'
+    },
+    info: {
+      icon: iconBase + 'info-i_maps.png'
+    }
+  };
+
+  var map = new google.maps.Map(document.getElementById('map'), {
+    // Zoom on the city of worcester
+    zoom: 14,
+    center: {lat: 42.26, lng: -71.8}
+  });
+  var geocoder = new google.maps.Geocoder();
+  //geocodeAddress(geocoder, map);
+  var trafficLayer = new google.maps.TrafficLayer();
+  var bikeLayer = new google.maps.BicyclingLayer();
+  bikeLayer.setMap(map);
+  document.getElementById('traffic_radio').onclick = function() {
+    console.log('hello');
+    bikeLayer.setMap(null);
+    trafficLayer.setMap(map);
+  }
+  document.getElementById('bike_radio').onclick = function() {
+    console.log('world');
+    trafficLayer.setMap(null);
+    bikeLayer.setMap(map);
+  }
+
+  google.maps.event.addListener(map, 'click', function(event) {
+    placeMarker(event.latLng);
+  });
+
+  function placeMarker(location) {
+    var marker = new google.maps.Marker({
+      position: location,
+      map: map,
+      icon: icons['parking'].icon
+    });
+  }
+
+  var directionsService = new google.maps.DirectionsService;
+  var directionsDisplay = new google.maps.DirectionsRenderer({
+    draggable: true,
+    map: map,
+    panel: document.getElementById('right-panel')
+  });
+  var control = document.getElementById('floating-panel');
+  control.style.display = 'block';
+  map.controls[google.maps.ControlPosition.TOP_CENTER].push(control);
+
+
+  document.getElementById('submit').addEventListener('click', function() {
+    var m1 = new google.maps.Marker();
+    var m2 = new google.maps.Marker();
+    geocodeAddress(geocoder, map, 'start_address', m1, m1, m2, directionsDisplay, directionsService);
+    geocodeAddress(geocoder, map, 'end_address', m2, m1, m2, directionsDisplay, directionsService);
+  });
+}
+
+function geocodeAddress(geocoder, resultsMap, field_name, marker, m1, m2, disp, serv) {
+  var address = document.getElementById(field_name).value;
+  geocoder.geocode({'address': address, 'bounds': resultsMap.getBounds()}, function(results, status) {
+    if (status === 'OK') {
+      resultsMap.setCenter(results[0].geometry.location);
+      marker.setPosition(results[0].geometry.location);
+      console.log(marker.getPosition());
+      if (geocoded === false) {
+        geocoded = true;
+      } else {
+        displayRoute(m1.getPosition(), m2.getPosition(), serv, disp);
+        geocoded = false;
+      }
+    } else {
+      alert('Geocode was not successful for the following reason: ' + status);
+    }
+  });
+}
+
+function displayRoute(origin, destination, service, display) {
+  service.route({
+    origin: origin,
+    destination: destination,
+    travelMode: 'BICYCLING',
+  }, function(response, status) {
+    if (status === 'OK') {
+      display.setDirections(response);
+    } else {
+      alert('Could not display directions due to: ' + status);
+    }
+  });
+}
+    </script>
+    <script async defer
+         src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBTOnifJS1nT2W3MVVZKn36DYMVfc_PQRw&callback=initMap">
+    </script>
+  </body>
+</html>
