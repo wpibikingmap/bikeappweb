@@ -1,12 +1,15 @@
 @charset "UTF-8";
 
 /* Body */
-body {
+html body {
 	background-color: lightgray;
+	height: 100%;
+	width: 100%;
+	margin: 0px;
 }
 /* Container */
 .container {
-	width: 100%;
+	width: 90%;
 	margin-left: auto;
 	margin-right: auto;
 	background-color: #FFFFFF;
@@ -27,18 +30,22 @@ body {
 /*Navigation bar*/
 header{
 	width: 100%;
-	height: 6%;
+	height: 80px;
 	background-color: #000000;
 }
 .app_name{
 	color: #FFFFFF;
 	font-size: 35px;
+	margin-top: 0px;
+	line-height: 75px;
+	margin-left: 15px;
 }
 .nav-bar{
 	float: right;
 	width: 50%;
 	text-align: right;
 	margin-right: 25px;
+	line-height: 35px;
 }
 .nav-bar ul {
 	list-style: none;
@@ -99,6 +106,11 @@ header{
 	.bikepic{
 		width:100%;
 	    height:100%;
+	}
+
+	/*make container whole screen*/
+	.container {
+		width: 100%;
 	}
 
 	/*hide navbar for bigger screen*/
