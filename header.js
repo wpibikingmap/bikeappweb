@@ -1,12 +1,8 @@
 document.write('\
-  <!--logo on top of page-->\
-  <div class="headerlogo">\
-    <p>Bike app logo here?</p>\
-  </div>\
   \
   <!--navigation bar-->\
   <header>\
-    <nav>\
+    <nav class="nav-bar">\
         <ul>\
           <li><a href="homepage.html">HOME</a></li>\
           <li><a href="about.html">ABOUT</a></li>\
@@ -16,6 +12,17 @@ document.write('\
           <li><a href="contact.html">CONTACT</a></li>\
          </ul>\
     </nav>\
+    <div class="dropdown">\
+      <button class="dropbtn">☰</button>\
+      <div class="dropdown-content">\
+        <a href="homepage.html">HOME</a>\
+        <a href="about.html">ABOUT</a>\
+        <a href="">MAP</a></li>\
+        <a href="other.html">OTHER</a>\
+        <a href="tips.html">TIPS</a>\
+        <a href="contact.html">CONTACT</a>\
+      </div>\
+    </div>\
     <p class="app_name">App Name</p>\
   </header>\
   \
