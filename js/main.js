@@ -40,14 +40,36 @@ function initMap() {
   }
 
   google.maps.event.addListener(map, 'click', function(event) {
-    placeMarker(event.latLng);
+    placeMarker(event.latLng, -1);
   });
 
-  function placeMarker(location) {
+  function placeMarker(location, id) {
+    console.log(location);
+    var xmlhttp = new XMLHttpRequest();
+    if (id == -1) {
+      xmlhttp.onreadystatechange = function() {
+        if (this.readyState == 4 && this.status == 200) {
+          id = this.responseText;
+        }
+      };
+      xmlhttp.open("GET", "database.php?action=insert&lat=" + location.lat() +
+                          "&lon=" + location.lng(), true);
+      xmlhttp.send();
+    }
     var marker = new google.maps.Marker({
       position: location,
       map: map,
-      icon: icons['parking'].icon
+      icon: icons['parking'].icon,
+      draggable: true
+    });
+    marker.addListener('click', function() {
+      this.setMap(null);
+      if (id != -1) {
+        var deleter = new XMLHttpRequest();
+        deleter.onreadystatechange = function() {};
+        deleter.open("GET", "database.php?action=remove&id=" + id, true);
+        deleter.send();
+      }
     });
   }
 
@@ -79,6 +101,20 @@ function initMap() {
       'routeindex_changed',
       updateRoutes
   );
+
+  var xmlhttp = new XMLHttpRequest();
+  xmlhttp.onreadystatechange = function() {
+    if (this.readyState == 4 && this.status == 200) {
+      var markers = JSON.parse(this.responseText);
+      for (var i = 0; i < markers.length; i++) {
+        var m = markers[i];
+        var loc = new google.maps.LatLng(m[1], m[2]);
+        placeMarker(loc, m[0]);
+      }
+    }
+  };
+  xmlhttp.open("GET", "database.php?action=fetch", true);
+  xmlhttp.send();
 }
 
 function geocodeAddress(geocoder, resultsMap, field_name, marker, m1, m2, disp, serv) {

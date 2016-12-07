@@ -1,10 +1,13 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>Geocoding service</title>
+    <title>Bicyling Map</title>
     <meta name="viewport" content="initial-scale=1.0, user-scalable=no">
     <meta charset="utf-8">
     <style>
+    /* TODO(james): I've just sort of copied random style stuff in here;
+       should actually go through and see what it all does/remove extra junk.
+       And style things in a clean way (unlike what we have now). */
     /* Always set the map height explicitly to define the size of the div
      * element that contains the map. */
     #map {
@@ -82,20 +85,26 @@
       <input id="end_address" type="textbox" value="WPI" cols=150>
       <input id="submit" type="button" value="Directions"> <br>
 
-      You can create parking icons by clicking on the map. <br> They don't save. <br>
+      <p>
+      You can create parking icons by clicking on the map<br>
+      and delete them by clicking them again. All markers will<br>
+      save automatically.
+      </p>
       <input id="traffic_radio" type="radio" name="layer_display" value="traffic"> Show Traffic <br>
       <input id="bike_radio" type="radio" name="layer_display" value="bicycle" checked> Show Bicycling <br>
       <input id="terrain_check" type="checkbox" checked> Show Elevation Lines <br>
     </div>
     <div id="right-panel"></div>
     <div id="map"></div>
-      <script src="https://code.jquery.com/jquery-1.9.1.min.js"></script>
-        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js" integrity="sha384-0mSbJDEHialfmuBBQP6A4Qrprq5OVfW37PRR3j5ELqxss1yVqOtnepnHVP9aJ7xS" crossorigin="anonymous"></script>
-          <script type="text/javascript" src="https://www.google.com/jsapi"></script>
+
+    <script src="https://code.jquery.com/jquery-1.9.1.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js" integrity="sha384-0mSbJDEHialfmuBBQP6A4Qrprq5OVfW37PRR3j5ELqxss1yVqOtnepnHVP9aJ7xS" crossorigin="anonymous"></script>
+    <script type="text/javascript" src="https://www.google.com/jsapi"></script>
+
     <script type="text/javascript" src="js/flattest-route.js"></script>
     <script type="text/javascript" src="js/main.js"></script>
     <script async defer
-         src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBTOnifJS1nT2W3MVVZKn36DYMVfc_PQRw&callback=initMap&libraries=places">
+         src="https://maps.googleapis.com/maps/api/js?key=INSERT_KEY&callback=initMap&libraries=places">
     </script>
   </body>
 </html>
