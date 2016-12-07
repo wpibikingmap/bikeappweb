@@ -76,15 +76,21 @@ header{
 
 /*tips.html page*/
 .article-container{
-	outline: #000000 solid thin;
+	border-radius: 25px;
+	border: 2px solid #000000;
 	width: 50%;
+	background-color: #a3a3c2;
 	margin-top: 20px;
 	margin-left: 20px;
+	border-radius: 5px;
 }
 .article-thumbnail{
 	width: 25%;
 	margin-top: 15px;
 	margin-left: 10px;
+}
+.article-container h1 a{
+	color: #000000;
 }
 
 /*Articles*/
@@ -92,6 +98,10 @@ header{
 	width: 90%;
     word-wrap:break-word;
     margin-left: 10px;
+}
+.article-header{
+	margin-left: 10px;
+	font-family: "Arial Black", Gadget, sans-serif;
 }
 
 /*Styling for mobile devices*/
@@ -165,7 +175,6 @@ header{
 
 	/*Article for tips.html page*/
 	.article-container{
-		outline: #000000 solid thin;
 		width: 90%;
 		margin-top: 20px;
 		margin-left: 20px;
