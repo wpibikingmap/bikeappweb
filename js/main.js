@@ -115,8 +115,8 @@ function initMap() {
                  document.getElementById('end_address').value,
                  directionsService, directionsDisplay);
                  */
-    var m1 = new google.maps.Marker();
-    var m2 = new google.maps.Marker();
+    var m1 = [new google.maps.Marker()];
+    var m2 = [new google.maps.Marker()];
     geocodeAddress(geocoder, map, 'start_address', m1, m1, m2,
     directionsDisplay, directionsService);
     geocodeAddress(geocoder, map, 'end_address', m2, m1, m2, directionsDisplay,
@@ -210,16 +210,15 @@ function geocodeAddress(geocoder, resultsMap, field_name, marker, m1, m2, disp, 
   geocoder.geocode({'address': address, 'bounds': resultsMap.getBounds()}, function(results, status) {
     if (status === 'OK') {
       resultsMap.setCenter(results[0].geometry.location);
-      marker.setPosition(results[0].geometry.location);
-      if (geocoded === false) {
-        geocoded = true;
-      } else {
-        displayRoute(m1.getPosition(), m2.getPosition(), serv, disp);
-        geocoded = false;
-      }
+      marker[0] = results[0].geometry.location
     } else {
-      alert('Unable to locate address "' + address +
-            '" for the following reason: ' + status);
+      marker[0] = address;
+    }
+    if (geocoded === false) {
+      geocoded = true;
+    } else {
+      displayRoute(m1[0], m2[0], serv, disp);
+      geocoded = false;
     }
   });
 }
