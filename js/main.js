@@ -1,4 +1,6 @@
 var geocoded = false;
+var parking_table ='parking_location';
+var sharrows_table ='sharrows';
 function initMap() {
   var iconBase = 'https://maps.google.com/mapfiles/kml/shapes/';
   var icons = {
@@ -39,22 +41,46 @@ function initMap() {
     map.setMapTypeId(document.getElementById('terrain_check').checked ? 'terrain' : 'roadmap');
   }
 
-  google.maps.event.addListener(map, 'click', function(event) {
-    placeMarker(event.latLng, -1);
+  var drawingManager = new google.maps.drawing.DrawingManager({
+    drawingMode: google.maps.drawing.OverlayType.POLYLINE,
+    drawingControl: true,
+    drawingControlOptions: {
+      position: google.maps.ControlPosition.TOP_CENTER,
+      drawingModes: [
+        google.maps.drawing.OverlayType.POLYLINE
+      ]
+    },
+    polylineOptions: {
+      strokeColor: '#696969',
+      strokeWeight: 2
+    }
+  });
+  var placingListener;
+  document.getElementById('edit_mode').addEventListener('change', function() {
+    if (this.value == 'view') {
+      placingListener.remove();
+      drawingManager.setMap(null);
+    } else if (this.value == 'parking') {
+      placingListener = google.maps.event.addListener(
+          map, 'click', function(event) { placeMarker(event.latLng, -1); });
+      drawingManager.setMap(null);
+    } else if (this.value == 'roads') {
+      if (placingListener) {
+        placingListener.remove();
+      }
+      drawingManager.setMap(map);
+    }
+  });
+
+  drawingManager.addListener('polylinecomplete', function(poly) {
+    var path = poly.getPath();
+    snapToRoad(path);
+    poly.setMap(null);
   });
 
   function placeMarker(location, id) {
-    console.log(location);
-    var xmlhttp = new XMLHttpRequest();
     if (id == -1) {
-      xmlhttp.onreadystatechange = function() {
-        if (this.readyState == 4 && this.status == 200) {
-          id = this.responseText;
-        }
-      };
-      xmlhttp.open("GET", "database.php?action=insert&lat=" + location.lat() +
-                          "&lon=" + location.lng(), true);
-      xmlhttp.send();
+      id = database_insert(parking_table, ["lat", "lon"], [[location.lat()],[location.lng()]]);
     }
     var marker = new google.maps.Marker({
       position: location,
@@ -65,10 +91,7 @@ function initMap() {
     marker.addListener('click', function() {
       this.setMap(null);
       if (id != -1) {
-        var deleter = new XMLHttpRequest();
-        deleter.onreadystatechange = function() {};
-        deleter.open("GET", "database.php?action=remove&id=" + id, true);
-        deleter.send();
+        database_remove(parking_table, id);
       }
     });
   }
@@ -84,7 +107,7 @@ function initMap() {
   });
   var control = document.getElementById('floating-panel');
   control.style.display = 'block';
-  map.controls[google.maps.ControlPosition.TOP_CENTER].push(control);
+  map.controls[google.maps.ControlPosition.RIGHT_TOP].push(control);
 
 
   document.getElementById('submit').addEventListener('click', function() {
@@ -102,9 +125,9 @@ function initMap() {
       updateRoutes
   );
 
-  var xmlhttp = new XMLHttpRequest();
-  xmlhttp.onreadystatechange = function() {
+  database_fetch(parking_table, [ "id", "lat", "lon" ], function() {
     if (this.readyState == 4 && this.status == 200) {
+      // TODO(james): Cleanly handle no response text.
       var markers = JSON.parse(this.responseText);
       for (var i = 0; i < markers.length; i++) {
         var m = markers[i];
@@ -112,9 +135,68 @@ function initMap() {
         placeMarker(loc, m[0]);
       }
     }
-  };
-  xmlhttp.open("GET", "database.php?action=fetch", true);
+  });
+
+  database_fetch(sharrows_table, ["id", "pindex", "lat", "lon"], function() {
+    if (this.readyState == 4 && this.status == 200) {
+      var points = JSON.parse(this.responseText);
+      // Sort by id and index.
+      points.sort(function(a, b){return (a[0] == b[0]) ? (a[1] - b[1])
+                                                       : (a[0] - b[0])});
+      if (points.length == 0) return;
+      var cur_id = points[0][0];
+      var coords = [];
+      for (var i = 0; i < points.length; i++) {
+        var row = points[i];
+        var id = row[0];
+        if (id != cur_id) {
+          drawCoordinates(coords, id);
+          cur_id = id;
+          coords = [];
+        } else {
+          coords.push(new google.maps.LatLng(row[2], row[3]));
+        }
+      }
+      // Otherwise, the last one doesn't get drawn...
+      drawCoordinates(coords, cur_id);
+    }
+  });
+}
+
+function database_fetch(table, cols, callback) {
+  var xmlhttp = new XMLHttpRequest();
+  xmlhttp.onreadystatechange = callback;
+  xmlhttp.open("GET", "database.php?action=fetch&table=" + table + "&cols=" +
+                          JSON.stringify(cols),
+               true);
   xmlhttp.send();
+}
+
+function database_remove(table, id) {
+  var deleter = new XMLHttpRequest();
+  deleter.onreadystatechange = function() {};
+  deleter.open("GET", "database.php?action=remove&table=" + table + "&id=" + id,
+               true);
+  deleter.send();
+}
+
+function database_insert(table, cols, vals) {
+  var xmlhttp = new XMLHttpRequest();
+  var id = -1;
+  xmlhttp.onreadystatechange = function() {
+    if (this.readyState == 4 && this.status == 200) {
+      id = parseInt(this.responseText);
+    }
+  };
+  var get_str = "database.php?action=insert&table=" + table;
+  for (var i = 0; i < cols.length; i++) {
+    get_str += "&" + cols[i] + "=";
+    get_str += JSON.stringify(vals[i]);
+  }
+  // TODO(james): Synchronous fetchs are bad; figure out how to avoid.
+  xmlhttp.open("GET", get_str, false);
+  xmlhttp.send();
+  return id;
 }
 
 function geocodeAddress(geocoder, resultsMap, field_name, marker, m1, m2, disp, serv) {
@@ -123,7 +205,6 @@ function geocodeAddress(geocoder, resultsMap, field_name, marker, m1, m2, disp, 
     if (status === 'OK') {
       resultsMap.setCenter(results[0].geometry.location);
       marker.setPosition(results[0].geometry.location);
-      console.log(marker.getPosition());
       if (geocoded === false) {
         geocoded = true;
       } else {
@@ -147,6 +228,69 @@ function displayRoute(origin, destination, service, display) {
       display.setDirections(response);
     } else {
       alert('Could not display directions due to: ' + status);
+    }
+  });
+}
+
+function snapToRoad(path) {
+  var pathValues = [];
+  for (var i = 0; i < path.getLength(); i++) {
+    pathValues.push(path.getAt(i).toUrlValue());
+  }
+
+  $.get('https://roads.googleapis.com/v1/snapToRoads', {
+      interpolate: true,
+      key: "AIzaSyBTOnifJS1nT2W3MVVZKn36DYMVfc_PQRw",
+      path: pathValues.join('|')
+      }, function(data) {
+        var snappedCoordinates = processSnapToRoadResponse(data);
+        drawCoordinates(snappedCoordinates, -1);
+      });
+}
+
+// Store snapped polyline returned by the snap-to-road service.
+function processSnapToRoadResponse(data) {
+  var coords = [];
+  for (var i = 0; i < data.snappedPoints.length; i++) {
+    var latlng = new google.maps.LatLng(
+        data.snappedPoints[i].location.latitude,
+        data.snappedPoints[i].location.longitude);
+    coords.push(latlng);
+  }
+  return coords
+}
+
+// Draws the snapped polyline (after processing snap-to-road response).
+function drawCoordinates(coords, id) {
+  var snappedPolyline = new google.maps.Polyline({
+    path: coords,
+    strokeColor: 'blue',
+    strokeWeight: 3
+  });
+
+  snappedPolyline.setMap(map);
+
+  if (id == -1) {
+    // We need to add this line to the database.
+    // Because id auto increments, first send in one row to get an id then add everything else.
+    c0 = coords[0];
+    id = database_insert(sharrows_table, ["pindex", "lat", "lon"], [[0], [c0.lat()], [c0.lng()]]);
+    if (id != -1) {
+      var vals = [[], [], [], []];
+      for (var i = 1; i < coords.length; i++) {
+        vals[0].push(id);
+        vals[1].push(i);
+        vals[2].push(coords[i].lat());
+        vals[3].push(coords[i].lng());
+      }
+      database_insert(sharrows_table, ["id", "pindex", "lat", "lon"], vals);
+    }
+  }
+
+  snappedPolyline.addListener('click', function() {
+    this.setMap(null);
+    if (id != -1) {
+      database_remove(sharrows_table, id);
     }
   });
 }

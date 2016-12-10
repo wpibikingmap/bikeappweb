@@ -22,7 +22,7 @@
     #floating-panel {
       position: absolute;
       top: 10px;
-      left: 25%;
+      left: 75%;
       z-index: 5;
       background-color: #fff;
       padding: 5px;
@@ -93,6 +93,12 @@
       <input id="traffic_radio" type="radio" name="layer_display" value="traffic"> Show Traffic <br>
       <input id="bike_radio" type="radio" name="layer_display" value="bicycle" checked> Show Bicycling <br>
       <input id="terrain_check" type="checkbox" checked> Show Elevation Lines <br>
+      Edit Mode:
+      <select id="edit_mode">
+        <option value="view">View</option>
+        <option value="parking">Parking</option>
+        <option value="roads">Roads</option>
+      </select> <br>
     </div>
     <div id="right-panel"></div>
     <div id="map"></div>
@@ -104,7 +110,7 @@
     <script type="text/javascript" src="js/flattest-route.js"></script>
     <script type="text/javascript" src="js/main.js"></script>
     <script async defer
-         src="https://maps.googleapis.com/maps/api/js?key=INSERT_KEY&callback=initMap&libraries=places">
+         src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBTOnifJS1nT2W3MVVZKn36DYMVfc_PQRw&callback=initMap&libraries=places,drawing">
     </script>
   </body>
 </html>
