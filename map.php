@@ -110,7 +110,7 @@
     <script type="text/javascript" src="js/flattest-route.js"></script>
     <script type="text/javascript" src="js/main.js"></script>
     <script async defer
-         src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBTOnifJS1nT2W3MVVZKn36DYMVfc_PQRw&callback=initMap&libraries=places,drawing">
+         src="https://maps.googleapis.com/maps/api/js?key=API_KEY&callback=initMap&libraries=places,drawing">
     </script>
   </body>
 </html>
