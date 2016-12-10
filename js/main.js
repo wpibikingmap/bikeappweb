@@ -109,12 +109,18 @@ function initMap() {
   control.style.display = 'block';
   map.controls[google.maps.ControlPosition.RIGHT_TOP].push(control);
 
-
   document.getElementById('submit').addEventListener('click', function() {
+    /*
+    displayRoute(document.getElementById('start_address').value,
+                 document.getElementById('end_address').value,
+                 directionsService, directionsDisplay);
+                 */
     var m1 = new google.maps.Marker();
     var m2 = new google.maps.Marker();
-    geocodeAddress(geocoder, map, 'start_address', m1, m1, m2, directionsDisplay, directionsService);
-    geocodeAddress(geocoder, map, 'end_address', m2, m1, m2, directionsDisplay, directionsService);
+    geocodeAddress(geocoder, map, 'start_address', m1, m1, m2,
+    directionsDisplay, directionsService);
+    geocodeAddress(geocoder, map, 'end_address', m2, m1, m2, directionsDisplay,
+    directionsService);
   });
 
   // Set up listener to change path elevation information if the user
@@ -212,7 +218,8 @@ function geocodeAddress(geocoder, resultsMap, field_name, marker, m1, m2, disp, 
         geocoded = false;
       }
     } else {
-      alert('Geocode was not successful for the following reason: ' + status);
+      alert('Unable to locate address "' + address +
+            '" for the following reason: ' + status);
     }
   });
 }

@@ -81,14 +81,12 @@
   </head>
   <body>
     <div id="floating-panel">
-      <input id="start_address" type="textbox" value="City Hall" cols=150>
-      <input id="end_address" type="textbox" value="WPI" cols=150>
+      <input id="start_address" type="textbox" value="Union Station" cols=150>
+      <input id="end_address" type="textbox" value="Green Hill Park" cols=150>
       <input id="submit" type="button" value="Directions"> <br>
 
       <p>
-      You can create parking icons by clicking on the map<br>
-      and delete them by clicking them again. All markers will<br>
-      save automatically.
+      See <a href="https://github.com/wpibikingmap/bikeappweb/blob/master/README.md">here</a> for some documentation.
       </p>
       <input id="traffic_radio" type="radio" name="layer_display" value="traffic"> Show Traffic <br>
       <input id="bike_radio" type="radio" name="layer_display" value="bicycle" checked> Show Bicycling <br>
