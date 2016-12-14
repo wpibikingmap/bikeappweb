@@ -48,3 +48,7 @@ Black mostly shows up in rather extreme locations (eg, George Street).
    you click on parking icons, it pops up a brief description and maybe a picture
    of the parking.
  - Provide more explanation/data for the terrain component.
+
+### Reminders/Notes
+
+ - When implementing authentication, refactor things to make it a Drupal module.

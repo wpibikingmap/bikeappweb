@@ -20,7 +20,10 @@ if ($conn->connect_errno) {
       die('Could not connect: ' . mysqli_error($conn));
 }
 
-$table = $_REQUEST['table'];
+// TODO(james): Properly escape everything for security, including the cols in
+// the fetch and the variables in the insert and the id in the remove, as well
+// as every other possible field.
+$table = $conn->real_escape_string($_REQUEST['table']);
 delete_val($keys, 'table');
 if ($action == "insert") {
   $arraylen = count($keys);
@@ -49,6 +52,9 @@ if ($action == "insert") {
       $get_id_sql = "select id from $table order by id desc limit 1";
       $result = $conn->query($get_id_sql);
       $id = $result->fetch_row()[0];
+      // TODO(james): List all the IDs for inserting multiple rows.
+      // TODO(james): Currently, not thread-safe. If a new row is inserted
+      // before we check it, then we have an issue.
       echo "$id";
     }
   }

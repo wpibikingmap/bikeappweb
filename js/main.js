@@ -82,17 +82,27 @@ function initMap() {
     if (id == -1) {
       id = database_insert(parking_table, ["lat", "lon"], [[location.lat()],[location.lng()]]);
     }
+    var button_id = "delete_marker"+id;
+    var infoContent =
+        "<input id=" + button_id + " type=\"button\" value=\"delete\">";
+    var infoWindow = new google.maps.InfoWindow({
+      content: infoContent,
+      maxWidth: 200,
+    });
     var marker = new google.maps.Marker({
       position: location,
       map: map,
       icon: icons['parking'].icon,
-      draggable: true
+      draggable: false // TODO(james): Make it constructive to have this as true.
     });
     marker.addListener('click', function() {
-      this.setMap(null);
-      if (id != -1) {
-        database_remove(parking_table, id);
-      }
+      infoWindow.open(map, this);
+      document.getElementById(button_id).addEventListener('click', function () {
+        marker.setMap(null);
+        if (id != -1) {
+          database_remove(parking_table, id);
+        }
+      });
     });
   }
 
@@ -293,10 +303,25 @@ function drawCoordinates(coords, id) {
     }
   }
 
+  var button_id = "delete_line"+id;
+  var infoContent =
+      "<input id=" + button_id + " type=\"button\" value=\"delete\">";
+  var infoWindow = new google.maps.InfoWindow({
+    content: infoContent,
+    maxWidth: 200,
+  });
+  var lineMarker = new google.maps.Marker({
+    position: coords[0],
+    map: map,
+    visible: false,
+  });
   snappedPolyline.addListener('click', function() {
-    this.setMap(null);
-    if (id != -1) {
-      database_remove(sharrows_table, id);
-    }
+    infoWindow.open(map, lineMarker);
+    document.getElementById(button_id).addEventListener('click', function () {
+      snappedPolyline.setMap(null);
+      if (id != -1) {
+        database_remove(sharrows_table, id);
+      }
+    });
   });
 }
