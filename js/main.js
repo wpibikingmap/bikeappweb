@@ -58,7 +58,9 @@ function initMap() {
   var placingListener;
   document.getElementById('edit_mode').addEventListener('change', function() {
     if (this.value == 'view') {
-      placingListener.remove();
+      if (placingListener) {
+        placingListener.remove();
+      }
       drawingManager.setMap(null);
     } else if (this.value == 'parking') {
       placingListener = google.maps.event.addListener(
