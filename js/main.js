@@ -62,7 +62,7 @@ function initMap() {
       drawingManager.setMap(null);
     } else if (this.value == 'parking') {
       placingListener = google.maps.event.addListener(
-          map, 'click', function(event) { placeMarker(event.latLng, -1); });
+          map, 'click', function(event) { placeMarker(event.latLng, -1, null); });
       drawingManager.setMap(null);
     } else if (this.value == 'roads') {
       if (placingListener) {
@@ -78,23 +78,49 @@ function initMap() {
     poly.setMap(null);
   });
 
-  function placeMarker(location, id) {
-    if (id == -1) {
-      id = database_insert(parking_table, ["lat", "lon"], [[location.lat()],[location.lng()]]);
-    }
-    var button_id = "delete_marker"+id;
-    var infoContent =
-        "<input id=" + button_id + " type=\"button\" value=\"delete\">";
-    var infoWindow = new google.maps.InfoWindow({
-      content: infoContent,
-      maxWidth: 200,
-    });
+  var markerInc = 0;
+  function placeMarker(location, id, notes) {
     var marker = new google.maps.Marker({
       position: location,
       map: map,
       icon: icons['parking'].icon,
       draggable: false // TODO(james): Make it constructive to have this as true.
     });
+    var button_id = "delete_marker"+id;
+    var infoContent = "<input id=" + button_id +
+                      " type=\"button\" value=\"delete\"><br>" +
+                      (notes == null ? "" : notes);
+    var infoWindow = new google.maps.InfoWindow({
+      content: infoContent,
+      maxWidth: 200,
+    });
+
+    if (id == -1) {
+      markerInc++;
+      var content_id = "marker_content"+markerInc;
+      var save_id = "marker_save"+markerInc;
+      var createContent = "<input id=\"" + content_id +
+                          "\" type=textbox><br><input id=" + save_id +
+                          " type=\"button\" value=\"save\">";
+      var createWindow = new google.maps.InfoWindow({
+        content: createContent,
+        maxWidth: 200,
+      });
+      createWindow.open(map, marker);
+      document.getElementById(save_id).onclick = function() {
+        notes = document.getElementById(content_id).value;
+        console.log("Notes: " + notes);
+        id = database_insert(parking_table, [ "lat", "lon", "notes" ], [
+          [location.lat()],
+          [location.lng()],
+          [notes]
+        ]);
+        infoContent += notes;
+        infoWindow.setContent(infoContent);
+        console.log(id);
+        createWindow.close();
+      };
+    }
     marker.addListener('click', function() {
       infoWindow.open(map, this);
       document.getElementById(button_id).addEventListener('click', function () {
@@ -141,14 +167,14 @@ function initMap() {
       updateRoutes
   );
 
-  database_fetch(parking_table, [ "id", "lat", "lon" ], function() {
+  database_fetch(parking_table, [ "id", "lat", "lon", "notes" ], function() {
     if (this.readyState == 4 && this.status == 200) {
       // TODO(james): Cleanly handle no response text.
       var markers = JSON.parse(this.responseText);
       for (var i = 0; i < markers.length; i++) {
         var m = markers[i];
         var loc = new google.maps.LatLng(m[1], m[2]);
-        placeMarker(loc, m[0]);
+        placeMarker(loc, m[0], m[3]);
       }
     }
   });
@@ -197,6 +223,9 @@ function database_remove(table, id) {
 }
 
 function database_insert(table, cols, vals) {
+  if (cols.length != vals.length) {
+    console.log("Warning: Have different length columns and values for database_insert");
+  }
   var xmlhttp = new XMLHttpRequest();
   var id = -1;
   xmlhttp.onreadystatechange = function() {

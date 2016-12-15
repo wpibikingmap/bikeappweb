@@ -31,7 +31,7 @@ if ($action == "insert") {
     $format_str = "(";
     $val_array = array();
     for ($i = 0; $i < $arraylen; $i++) {
-      $format_str .= $keys[$i]. ",";
+      $format_str .= $conn->real_escape_string($keys[$i]). ",";
       $new_val = json_decode($_REQUEST[$keys[$i]]);
       array_push($val_array, $new_val);
     }
@@ -40,9 +40,9 @@ if ($action == "insert") {
     $val_str = "";
     // TODO(james): Do something about possibilities of different length arrays.
     for ($i = 0; $i < count($val_array[0]); $i++) {
-      $val_str .= "(". $val_array[0][$i];
+      $val_str .= "(\"". $conn->real_escape_string($val_array[0][$i]). "\"";
       for ($j = 1; $j < count($val_array); $j++) {
-        $val_str .= ",". $val_array[$j][$i];
+        $val_str .= ",\"". $conn->real_escape_string($val_array[$j][$i]). "\"";
       }
       $val_str .= "),";
     }
@@ -56,6 +56,9 @@ if ($action == "insert") {
       // TODO(james): Currently, not thread-safe. If a new row is inserted
       // before we check it, then we have an issue.
       echo "$id";
+    } else {
+      echo "Failed to perform query: ". $sql. "<br>";
+      var_dump($sql);
     }
   }
 } else if ($action == "remove") {
@@ -73,7 +76,11 @@ if ($action == "insert") {
       $result_str .= '[';
 
       for ($i = 0; $i < count($cols); $i++) {
-        $result_str .= $row[$cols[$i]] . ',';
+        $val = json_encode($row[$cols[$i]]);
+        if ($val == NULL) {
+          $val = "null";
+        }
+        $result_str .= $val . ',';
       }
 
       $result_str = rtrim($result_str, ',');
