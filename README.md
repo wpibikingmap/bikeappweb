@@ -15,10 +15,14 @@ Selecting "Show Elevation Lines" will show Google's topographical layer.
 
 Changing the edit mode allows you to insert either parking icons or blue lines
 that will snap to roads. No matter what mode you are in, clicking on any parking icon
-or blue line will delete it.
+or blue line will open a dialog box containing two things: (a) a delete button that
+will permanently delete the icon and (b) optionally, some text providing more detail;
+if the data entry person did not put in any text to display, then none will display.
 
 When in an edit mode, clicking on the map will create the item in question:
- - Parking icons just appear where you click
+ - Parking icons just appear where you click. When it appears, it will also show
+   a text entry field where you indicate what you want to display to the user
+   when they click on it (eg, mentioning that the bike racks are covered from rain).
  - For lines, you click and it will start drawing a line; click to create
    more points on the line. It will attempt to "snap" it to a road when you
    are done (when you are done, click again on the last point in the line to
