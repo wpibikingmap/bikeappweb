@@ -56,23 +56,25 @@ function initMap() {
     }
   });
   var placingListener;
-  document.getElementById('edit_mode').addEventListener('change', function() {
-    if (this.value == 'view') {
-      if (placingListener) {
-        placingListener.remove();
+  if (document.getElementById('edit_mode') != null) {
+    document.getElementById('edit_mode').addEventListener('change', function() {
+      if (this.value == 'view') {
+        if (placingListener) {
+          placingListener.remove();
+        }
+        drawingManager.setMap(null);
+      } else if (this.value == 'parking') {
+        placingListener = google.maps.event.addListener(
+            map, 'click', function(event) { placeMarker(event.latLng, -1, null); });
+        drawingManager.setMap(null);
+      } else if (this.value == 'roads') {
+        if (placingListener) {
+          placingListener.remove();
+        }
+        drawingManager.setMap(map);
       }
-      drawingManager.setMap(null);
-    } else if (this.value == 'parking') {
-      placingListener = google.maps.event.addListener(
-          map, 'click', function(event) { placeMarker(event.latLng, -1, null); });
-      drawingManager.setMap(null);
-    } else if (this.value == 'roads') {
-      if (placingListener) {
-        placingListener.remove();
-      }
-      drawingManager.setMap(map);
-    }
-  });
+    });
+  }
 
   drawingManager.addListener('polylinecomplete', function(poly) {
     var path = poly.getPath();
