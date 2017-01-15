@@ -370,8 +370,8 @@ function drawCoordinates(coords, id, type) {
     var content_id = "line_content"+lineInc;
     var save_id = "line_save"+lineInc;
     var type_id = "line_type"+lineInc;
-    var createContent = "<input id=\"" + content_id +
-                        "\" type=textbox><br><input id=" + save_id +
+    var createContent = /*"<input id=\"" + content_id +
+                        "\" type=textbox><br>*/"<input id=" + save_id +
                         " type=\"button\" value=\"save\">"+
                         "<select id=\"" + type_id + "\">"+
                         "  <option value='LANE'>Lane</option>"+
