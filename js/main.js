@@ -1,20 +1,35 @@
 var geocoded = false;
-var parking_table ='parking_location';
-var sharrows_table ='sharrows';
+var parking_table ='locations';
+var sharrows_table ='roads';
+// For type ids for various things (which show up in the database tables), we
+// use incrementing positive numbers for things that locations (eg, 1=parking,
+// 2=shop, 3=intersection), negative decrementing for lines (eg, -1=lane,
+// -2=sharrow, -3=dangerous) and 0 as a special/"none" value.
+var iconBase = 'https://maps.google.com/mapfiles/kml/shapes/';
+var LocsEnum = {
+  PARKING: 1,
+  SHOP: 2,
+  BAD_INTER: 3,
+  icons: null,
+};
+var RoadsEnum = {
+  LANE: 1,
+  SHARROW: 2,
+  RISKY: 3,
+  colors: {
+    1: 'green',
+    2: 'blue',
+    3: 'red',
+  },
+};
 function initMap() {
-  var iconBase = 'https://maps.google.com/mapfiles/kml/shapes/';
-  var icons = {
-    parking: {
-      icon: iconBase + 'parking_lot_maps.png'
-    },
-    library: {
-      icon: iconBase + 'library_maps.png'
-    },
-    info: {
-      icon: iconBase + 'info-i_maps.png'
-    }
-  };
   elevator = new google.maps.ElevationService();
+  LocsEnum.icons = {
+    0: null,
+    1: {url: iconBase + 'parking_lot_maps.png', scaledSize: new google.maps.Size(25, 25)},
+    2: {url: iconBase + 'capital_big_highlight.png', scaledSize: new google.maps.Size(20, 20)},
+    3: {url: iconBase + 'caution.png', scaledSize: new google.maps.Size(30, 30)},
+  };
 
   map = new google.maps.Map(document.getElementById('map'), {
     // Zoom on the city of worcester
@@ -29,6 +44,8 @@ function initMap() {
   var trafficLayer = new google.maps.TrafficLayer();
   var bikeLayer = new google.maps.BicyclingLayer();
   bikeLayer.setMap(map);
+
+  // Set up buttons for switching maps views
   document.getElementById('traffic_radio').onclick = function() {
     bikeLayer.setMap(null);
     trafficLayer.setMap(map);
@@ -55,6 +72,7 @@ function initMap() {
       strokeWeight: 2
     }
   });
+
   var placingListener;
   if (document.getElementById('edit_mode') != null) {
     document.getElementById('edit_mode').addEventListener('change', function() {
@@ -65,7 +83,7 @@ function initMap() {
         drawingManager.setMap(null);
       } else if (this.value == 'parking') {
         placingListener = google.maps.event.addListener(
-            map, 'click', function(event) { placeMarker(event.latLng, -1, null); });
+            map, 'click', function(event) { placeMarker(event.latLng, -1, null, 0); });
         drawingManager.setMap(null);
       } else if (this.value == 'roads') {
         if (placingListener) {
@@ -81,60 +99,6 @@ function initMap() {
     snapToRoad(path);
     poly.setMap(null);
   });
-
-  var markerInc = 0;
-  function placeMarker(location, id, notes) {
-    var marker = new google.maps.Marker({
-      position: location,
-      map: map,
-      icon: icons['parking'].icon,
-      draggable: false // TODO(james): Make it constructive to have this as true.
-    });
-    var button_id = "delete_marker"+id;
-    var infoContent = "<input id=" + button_id +
-                      " type=\"button\" value=\"delete\"><br>" +
-                      (notes == null ? "" : notes);
-    var infoWindow = new google.maps.InfoWindow({
-      content: infoContent,
-      maxWidth: 200,
-    });
-
-    if (id == -1) {
-      markerInc++;
-      var content_id = "marker_content"+markerInc;
-      var save_id = "marker_save"+markerInc;
-      var createContent = "<input id=\"" + content_id +
-                          "\" type=textbox><br><input id=" + save_id +
-                          " type=\"button\" value=\"save\">";
-      var createWindow = new google.maps.InfoWindow({
-        content: createContent,
-        maxWidth: 200,
-      });
-      createWindow.open(map, marker);
-      document.getElementById(save_id).onclick = function() {
-        notes = document.getElementById(content_id).value;
-        console.log("Notes: " + notes);
-        id = database_insert(parking_table, [ "lat", "lon", "notes" ], [
-          [location.lat()],
-          [location.lng()],
-          [notes]
-        ]);
-        infoContent += notes;
-        infoWindow.setContent(infoContent);
-        console.log(id);
-        createWindow.close();
-      };
-    }
-    marker.addListener('click', function() {
-      infoWindow.open(map, this);
-      document.getElementById(button_id).addEventListener('click', function () {
-        marker.setMap(null);
-        if (id != -1) {
-          database_remove(parking_table, id);
-        }
-      });
-    });
-  }
 
   var directionsService = new google.maps.DirectionsService;
   var directionsDisplay = new google.maps.DirectionsRenderer({
@@ -171,19 +135,19 @@ function initMap() {
       updateRoutes
   );
 
-  database_fetch(parking_table, [ "id", "lat", "lon", "notes" ], function() {
+  database_fetch(parking_table, [ "id", "lat", "lon", "notes", "loc_type" ], function() {
     if (this.readyState == 4 && this.status == 200) {
       // TODO(james): Cleanly handle no response text.
       var markers = JSON.parse(this.responseText);
       for (var i = 0; i < markers.length; i++) {
         var m = markers[i];
         var loc = new google.maps.LatLng(m[1], m[2]);
-        placeMarker(loc, m[0], m[3]);
+        placeMarker(loc, m[0], m[3], m[4]);
       }
     }
   });
 
-  database_fetch(sharrows_table, ["id", "pindex", "lat", "lon"], function() {
+  database_fetch(sharrows_table, ["id", "pindex", "lat", "lon", "line_type"], function() {
     if (this.readyState == 4 && this.status == 200) {
       var points = JSON.parse(this.responseText);
       // Sort by id and index.
@@ -196,7 +160,7 @@ function initMap() {
         var row = points[i];
         var id = row[0];
         if (id != cur_id) {
-          drawCoordinates(coords, id);
+          drawCoordinates(coords, cur_id, points[i-1][4]);
           cur_id = id;
           coords = [];
         } else {
@@ -204,7 +168,7 @@ function initMap() {
         }
       }
       // Otherwise, the last one doesn't get drawn...
-      drawCoordinates(coords, cur_id);
+      drawCoordinates(coords, cur_id, points[points.length-1][4]);
     }
   });
 }
@@ -281,6 +245,80 @@ function displayRoute(origin, destination, service, display) {
   });
 }
 
+var markerInc = 0;
+function placeMarker(location, id, notes, type) {
+  var marker = new google.maps.Marker({
+    position: location,
+    map: map,
+    icon: LocsEnum.icons[type],
+    draggable: false // TODO(james): Make it constructive to have this as true.
+  });
+  var button_id = "delete_marker"+id;
+  var infoButton = "<input id=" + button_id +
+                    " type=\"button\" value=\"delete\"><br>" +
+                    (notes == null ? "" : notes);
+  var infoContent = (notes == null ? "" : notes);
+  var infoWindow = new google.maps.InfoWindow({
+    content: infoContent,
+    maxWidth: 200,
+  });
+
+  if (id == -1) {
+    markerInc++;
+    var content_id = "marker_content"+markerInc;
+    var save_id = "marker_save"+markerInc;
+    var type_id = "line_type"+markerInc;
+    var createContent = "<input id=\"" + content_id +
+                        "\" type=textbox><br><input id=" + save_id +
+                        " type=\"button\" value=\"save\">"+
+                        "<select id=\"" + type_id + "\">"+
+                        "  <option value='PARKING'>Parking</option>"+
+                        "  <option value='SHOP'>Bike Shop</option>"+
+                        "  <option value='BAD_INTER'>Dangerous Place</option>"+
+                        "</select>";
+    var createWindow = new google.maps.InfoWindow({
+      content: createContent,
+      maxWidth: 200,
+    });
+    createWindow.open(map, marker);
+    createWindow.addListener('closeclick', function() {
+      if (id == -1) {
+        marker.setVisible(false);
+      }
+    });
+    document.getElementById(save_id).onclick = function() {
+      type = LocsEnum[document.getElementById(type_id).value];
+      marker.setIcon(LocsEnum.icons[type]);
+      notes = document.getElementById(content_id).value;
+      id = database_insert(parking_table, [ "lat", "lon", "notes", "loc_type" ], [
+        [location.lat()],
+        [location.lng()],
+        [notes],
+        [type]
+      ]);
+      infoContent += notes;
+      infoWindow.setContent(infoButton+infoContent);
+      createWindow.close();
+    };
+  }
+  marker.addListener('click', function() {
+    var viewing = document.getElementById('edit_mode').value == 'view';
+    if (viewing) {
+      infoWindow.setContent(infoContent);
+      infoWindow.open(map, this);
+    } else {
+      infoWindow.setContent(infoButton+infoContent);
+      infoWindow.open(map, this);
+      document.getElementById(button_id).addEventListener('click', function () {
+        marker.setMap(null);
+        if (id != -1) {
+          database_remove(parking_table, id);
+        }
+      });
+    }
+  });
+}
+
 function snapToRoad(path) {
   var pathValues = [];
   for (var i = 0; i < path.getLength(); i++) {
@@ -293,7 +331,7 @@ function snapToRoad(path) {
       path: pathValues.join('|')
       }, function(data) {
         var snappedCoordinates = processSnapToRoadResponse(data);
-        drawCoordinates(snappedCoordinates, -1);
+        drawCoordinates(snappedCoordinates, -1, -1);
       });
 }
 
@@ -310,51 +348,82 @@ function processSnapToRoadResponse(data) {
 }
 
 // Draws the snapped polyline (after processing snap-to-road response).
-function drawCoordinates(coords, id) {
+var lineInc = 0;
+function drawCoordinates(coords, id, type) {
   var snappedPolyline = new google.maps.Polyline({
     path: coords,
-    strokeColor: 'blue',
+    strokeColor: RoadsEnum.colors[type],
     strokeWeight: 3
   });
 
-  snappedPolyline.setMap(map);
-
-  if (id == -1) {
-    // We need to add this line to the database.
-    // Because id auto increments, first send in one row to get an id then add everything else.
-    c0 = coords[0];
-    id = database_insert(sharrows_table, ["pindex", "lat", "lon"], [[0], [c0.lat()], [c0.lng()]]);
-    if (id != -1) {
-      var vals = [[], [], [], []];
-      for (var i = 1; i < coords.length; i++) {
-        vals[0].push(id);
-        vals[1].push(i);
-        vals[2].push(coords[i].lat());
-        vals[3].push(coords[i].lng());
-      }
-      database_insert(sharrows_table, ["id", "pindex", "lat", "lon"], vals);
-    }
-  }
-
-  var button_id = "delete_line"+id;
-  var infoContent =
-      "<input id=" + button_id + " type=\"button\" value=\"delete\">";
-  var infoWindow = new google.maps.InfoWindow({
-    content: infoContent,
-    maxWidth: 200,
-  });
   var lineMarker = new google.maps.Marker({
     position: coords[0],
     map: map,
     visible: false,
   });
-  snappedPolyline.addListener('click', function() {
-    infoWindow.open(map, lineMarker);
-    document.getElementById(button_id).addEventListener('click', function () {
-      snappedPolyline.setMap(null);
-      if (id != -1) {
-        database_remove(sharrows_table, id);
-      }
+
+  snappedPolyline.setMap(map);
+
+  if (id == -1) {
+    lineInc++;
+
+    var content_id = "line_content"+lineInc;
+    var save_id = "line_save"+lineInc;
+    var type_id = "line_type"+lineInc;
+    var createContent = "<input id=\"" + content_id +
+                        "\" type=textbox><br><input id=" + save_id +
+                        " type=\"button\" value=\"save\">"+
+                        "<select id=\"" + type_id + "\">"+
+                        "  <option value='LANE'>Lane</option>"+
+                        "  <option value='SHARROW'>Sharrow</option>"+
+                        "  <option value='RISKY'>Risky</option>"+
+                        "</select>";
+    var createWindow = new google.maps.InfoWindow({
+      content: createContent,
+      maxWidth: 200,
     });
+    createWindow.open(map, lineMarker);
+    document.getElementById(save_id).onclick = function() {
+      var type = RoadsEnum[document.getElementById(type_id).value];
+      snappedPolyline.setOptions({strokeColor: RoadsEnum.colors[type]});
+      // We need to add this line to the database.
+      // Because id auto increments, first send in one row to get an id then add everything else.
+      c0 = coords[0];
+      id = database_insert(sharrows_table, ["pindex", "lat", "lon", "line_type"], [[0], [c0.lat()],
+                                           [c0.lng()], [type]]);
+      if (id != -1) {
+        var vals = [[], [], [], [], []];
+        for (var i = 1; i < coords.length; i++) {
+          vals[0].push(id);
+          vals[1].push(i);
+          vals[2].push(coords[i].lat());
+          vals[3].push(coords[i].lng());
+          vals[4].push(type);
+        }
+        database_insert(sharrows_table, ["id", "pindex", "lat", "lon", "line_type"], vals);
+        createWindow.close();
+      }
+    }
+  }
+
+  snappedPolyline.addListener('click', function() {
+    var button_id = "delete_line"+id;
+    var infoContent =
+        "<input id=" + button_id + " type=\"button\" value=\"delete\">";
+    var infoWindow = new google.maps.InfoWindow({
+      content: infoContent,
+      maxWidth: 200,
+    });
+
+    if (document.getElementById('edit_mode').value != 'view') {
+      infoWindow.open(map, lineMarker);
+      document.getElementById(button_id).addEventListener('click', function () {
+        infoWindow.close();
+        snappedPolyline.setMap(null);
+        if (id != -1) {
+          database_remove(sharrows_table, id);
+        }
+      });
+    }
   });
 }
