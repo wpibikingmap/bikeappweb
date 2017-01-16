@@ -255,8 +255,7 @@ function placeMarker(location, id, notes, type) {
   });
   var button_id = "delete_marker"+id;
   var infoButton = "<input id=" + button_id +
-                    " type=\"button\" value=\"delete\"><br>" +
-                    (notes == null ? "" : notes);
+                    " type=\"button\" value=\"delete\"><br>";
   var infoContent = (notes == null ? "" : notes);
   var infoWindow = new google.maps.InfoWindow({
     content: infoContent,
@@ -302,7 +301,10 @@ function placeMarker(location, id, notes, type) {
     };
   }
   marker.addListener('click', function() {
-    var viewing = document.getElementById('edit_mode').value == 'view';
+    var viewing = true;
+    if (document.getElementById('edit_mode') != null) {
+      viewing = document.getElementById('edit_mode').value == 'view';
+    }
     if (viewing) {
       infoWindow.setContent(infoContent);
       infoWindow.open(map, this);
@@ -415,7 +417,8 @@ function drawCoordinates(coords, id, type) {
       maxWidth: 200,
     });
 
-    if (document.getElementById('edit_mode').value != 'view') {
+    if (document.getElementById('edit_mode') != null &&
+        document.getElementById('edit_mode').value != 'view') {
       infoWindow.open(map, lineMarker);
       document.getElementById(button_id).addEventListener('click', function () {
         infoWindow.close();

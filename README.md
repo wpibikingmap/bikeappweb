@@ -40,18 +40,19 @@ Black mostly shows up in rather extreme locations (eg, George Street).
 
  - General code cleanup
  - Make the UI nice and understandable
- - Add separate pages for editors and viewers
  - Allow moving of parking icons (currently you can move them but they don't save).
  - Authentication on database access (to prevent anyone from adding/removing points)
  - Make a separate save button so that if someone screws up they don't accidentally
    mess up the master record.
  - Maybe an undo as well? That might be more difficult.
- - Expand to include more than just parking icons and more than just blue lines.
  - Rather than deleting on click, make everything expand to show some information
    on the feature and maybe include buttons for deleting and the such. Eg, when
    you click on parking icons, it pops up a brief description and maybe a picture
    of the parking.
  - Provide more explanation/data for the terrain component.
+
+ - Make the roads disappear if not saved.
+ - Mobile friendly...
 
 ### Reminders/Notes
 
