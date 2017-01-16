@@ -1,0 +1,16 @@
+#map {
+  height: 90vh;
+}
+body, html {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+#right-panel {
+  height: 600px;
+  line-height: 30px;
+}
+#start_address,
+#end_address {
+  width: 100%;
+}
