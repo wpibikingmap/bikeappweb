@@ -6,6 +6,7 @@ var sharrows_table ='roads';
 // 2=shop, 3=intersection), negative decrementing for lines (eg, -1=lane,
 // -2=sharrow, -3=dangerous) and 0 as a special/"none" value.
 var iconBase = 'https://maps.google.com/mapfiles/kml/shapes/';
+// TODO: Make it so that you only have to change things here to add/remove types.
 var LocsEnum = {
   PARKING: 1,
   SHOP: 2,
@@ -16,10 +17,16 @@ var RoadsEnum = {
   LANE: 1,
   SHARROW: 2,
   RISKY: 3,
+  HIGHWAY: 4,
+  FOO: 5,
+  BAR: 6,
   colors: {
     1: 'green',
     2: 'blue',
     3: 'red',
+    4: 'yellow',
+    5: 'orange',
+    6: 'purple',
   },
 };
 function initMap() {
@@ -382,6 +389,9 @@ function drawCoordinates(coords, id, type) {
                         "  <option value='LANE'>Lane</option>"+
                         "  <option value='SHARROW'>Sharrow</option>"+
                         "  <option value='RISKY'>Risky</option>"+
+                        "  <option value='HIGHWAY'>Highway</option>"+
+                        "  <option value='FOO'>Foo</option>"+
+                        "  <option value='BAR'>Bar</option>"+
                         "</select>";
     var createWindow = new google.maps.InfoWindow({
       content: createContent,
