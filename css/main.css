@@ -14,3 +14,14 @@ body, html {
 #end_address {
   width: 100%;
 }
+.color-box {
+  width: 15px;
+  height: 15px;
+  display: inline-block;
+}
+#legend {
+  background: #fff;
+  padding: 5px;
+  margin: 5px;
+  border: 1px solid #000;
+}

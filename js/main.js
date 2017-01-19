@@ -3,15 +3,22 @@ var parking_table ='locations';
 var sharrows_table ='roads';
 // For type ids for various things (which show up in the database tables), we
 // use incrementing positive numbers for things that locations (eg, 1=parking,
-// 2=shop, 3=intersection), negative decrementing for lines (eg, -1=lane,
-// -2=sharrow, -3=dangerous) and 0 as a special/"none" value.
+// 2=shop, 3=intersection), positive incrementing for lines (eg, 1=lane,
+// 2=sharrow, 3=dangerous) and 0 as a special/"none" value.
 var iconBase = 'https://maps.google.com/mapfiles/kml/shapes/';
+var allMarkers = [];
+var allRoads = [];
 // TODO: Make it so that you only have to change things here to add/remove types.
 var LocsEnum = {
   PARKING: 1,
   SHOP: 2,
   BAD_INTER: 3,
   icons: null,
+  desc: { // Short descriptions of each thing.
+    1: 'Bike Parking',
+    2: 'Bike Shop',
+    3: 'Dangerous Intersection',
+  },
 };
 var RoadsEnum = {
   LANE: 1,
@@ -27,6 +34,14 @@ var RoadsEnum = {
     4: 'yellow',
     5: 'orange',
     6: 'purple',
+  },
+  desc: {
+    1: 'Bike Lane',
+    2: 'Sharrow',
+    3: 'Risky Road',
+    4: 'Highway',
+    5: 'Foo',
+    6: 'Bar',
   },
 };
 function initMap() {
@@ -117,11 +132,12 @@ function initMap() {
       strokeOpacity: .3
     }
   });
+  var control = document.getElementById('legend');
+  populateLegend();
   /*
-  var control = document.getElementById('floating-panel');
   control.style.display = 'block';
-  map.controls[google.maps.ControlPosition.RIGHT_TOP].push(control);
   */
+  map.controls[google.maps.ControlPosition.RIGHT_TOP].push(control);
 
   document.getElementById('submit').addEventListener('click', function() {
     /*
@@ -181,6 +197,60 @@ function initMap() {
       drawCoordinates(coords, cur_id, points[points.length-1][4]);
     }
   });
+}
+
+function populateLegend() {
+  var legend = document.getElementById("legend_content");
+  var content = "<h6>Lines</h6>";
+  var roadchecks = []
+  var locchecks = []
+  for (var prop in RoadsEnum) {
+    if (typeof(RoadsEnum[prop]) == "number") {
+      var i = RoadsEnum[prop];
+      content += "<input id=show_road"+i+" type=checkbox checked>"+
+                 "<div class='color-box' style='background-color: "+
+                 RoadsEnum.colors[i]+"'></div>"+RoadsEnum.desc[i]+"<br>";
+      roadchecks.push("show_road"+i);
+    }
+  }
+  content += "<h6>Markers</h6>";
+  for (var prop in LocsEnum) {
+    if (typeof(LocsEnum[prop]) == "number") {
+      var i = LocsEnum[prop];
+      content += "<input id=show_loc"+i+" type=checkbox checked>"+
+                 "<img class='color-box' src='"+LocsEnum.icons[i].url+"'>"+
+                 LocsEnum.desc[i]+"<br>";
+      locchecks.push("show_loc"+i);
+    }
+  }
+  legend.innerHTML = content;
+
+  // Now, make the check boxes do something:
+  for (var i in roadchecks) {
+    var checkbox = document.getElementById(roadchecks[i]);
+    checkbox.onclick = function() {
+      var name = this.id;
+      var type = name.substr(name.length - 1);
+      var roads = $.grep(allRoads, function(e){ return e.type == type; });
+      for (var j in roads) {
+        var road = roads[j];
+        console.log(road);
+        road.road.setVisible(this.checked);
+      }
+    }
+  }
+  for (var i in locchecks) {
+    var checkbox = document.getElementById(locchecks[i]);
+    checkbox.onclick = function() {
+      var name = this.id;
+      var type = name.substr(name.length - 1);
+      var locs = $.grep(allMarkers, function(e){ return e.type == type; });
+      for (var j in locs) {
+        var loc = locs[j];
+        loc.marker.setVisible(this.checked);
+      }
+    }
+  }
 }
 
 function database_fetch(table, cols, callback) {
@@ -280,11 +350,14 @@ function placeMarker(location, id, notes, type) {
     var createContent = "<input id=\"" + content_id +
                         "\" type=textbox><br><input id=" + save_id +
                         " type=\"button\" value=\"save\">"+
-                        "<select id=\"" + type_id + "\">"+
-                        "  <option value='PARKING'>Parking</option>"+
-                        "  <option value='SHOP'>Bike Shop</option>"+
-                        "  <option value='BAD_INTER'>Dangerous Place</option>"+
-                        "</select>";
+                        "<select id=\"" + type_id + "\">";
+    for (var prop in LocsEnum) {
+      if (typeof(LocsEnum[prop]) == "number") {
+        createContent += "<option value='" + prop + "'>" +
+                         LocsEnum.desc[LocsEnum[prop]] + "</option>";
+      }
+    }
+    createContent += "</select>";
     var createWindow = new google.maps.InfoWindow({
       content: createContent,
       maxWidth: 200,
@@ -308,8 +381,20 @@ function placeMarker(location, id, notes, type) {
       infoContent += notes;
       infoWindow.setContent(infoButton+infoContent);
       createWindow.close();
+      allMarkers.push({
+        marker: marker,
+        id: id,
+        type: type,
+      });
     };
+  } else {
+    allMarkers.push({
+      marker: marker,
+      id: id,
+      type: type,
+    });
   }
+
   marker.addListener('click', function() {
     var viewing = true;
     if (document.getElementById('edit_mode') != null) {
@@ -382,17 +467,16 @@ function drawCoordinates(coords, id, type) {
     var content_id = "line_content"+lineInc;
     var save_id = "line_save"+lineInc;
     var type_id = "line_type"+lineInc;
-    var createContent = /*"<input id=\"" + content_id +
-                        "\" type=textbox><br>*/"<input id=" + save_id +
+    var createContent = "<input id=" + save_id +
                         " type=\"button\" value=\"save\">"+
-                        "<select id=\"" + type_id + "\">"+
-                        "  <option value='LANE'>Lane</option>"+
-                        "  <option value='SHARROW'>Sharrow</option>"+
-                        "  <option value='RISKY'>Risky</option>"+
-                        "  <option value='HIGHWAY'>Highway</option>"+
-                        "  <option value='FOO'>Foo</option>"+
-                        "  <option value='BAR'>Bar</option>"+
-                        "</select>";
+                        "<select id=\"" + type_id + "\">";
+    for (var prop in RoadsEnum) {
+      if (typeof(RoadsEnum[prop]) == "number") {
+        createContent += "<option value='" + prop + "'>" +
+                         RoadsEnum.desc[RoadsEnum[prop]] + "</option>";
+      }
+    }
+    createContent += "</select>";
     var createWindow = new google.maps.InfoWindow({
       content: createContent,
       maxWidth: 200,
@@ -417,8 +501,20 @@ function drawCoordinates(coords, id, type) {
         }
         database_insert(sharrows_table, ["id", "pindex", "lat", "lon", "line_type"], vals);
         createWindow.close();
+
+        allRoads.push({
+          road: snappedPolyline,
+          id: id,
+          type: type,
+        });
       }
     }
+  } else {
+    allRoads.push({
+      road: snappedPolyline,
+      id: id,
+      type: type,
+    });
   }
 
   snappedPolyline.addListener('click', function() {
