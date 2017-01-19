@@ -207,9 +207,10 @@ function populateLegend() {
   for (var prop in RoadsEnum) {
     if (typeof(RoadsEnum[prop]) == "number") {
       var i = RoadsEnum[prop];
-      content += "<input id=show_road"+i+" type=checkbox checked>"+
+      content += "<label class=checkbox-inline>"+
+                 "<input id=show_road"+i+" type=checkbox checked>"+
                  "<div class='color-box' style='background-color: "+
-                 RoadsEnum.colors[i]+"'></div>"+RoadsEnum.desc[i]+"<br>";
+                 RoadsEnum.colors[i]+"'></div>"+RoadsEnum.desc[i]+"</label><br>";
       roadchecks.push("show_road"+i);
     }
   }
@@ -217,13 +218,14 @@ function populateLegend() {
   for (var prop in LocsEnum) {
     if (typeof(LocsEnum[prop]) == "number") {
       var i = LocsEnum[prop];
-      content += "<input id=show_loc"+i+" type=checkbox checked>"+
+      content += "<label class=checkbox-inline>"+
+                 "<input id=show_loc"+i+" type=checkbox checked>"+
                  "<img class='color-box' src='"+LocsEnum.icons[i].url+"'>"+
-                 LocsEnum.desc[i]+"<br>";
+                 LocsEnum.desc[i]+"</label><br>";
       locchecks.push("show_loc"+i);
     }
   }
-  legend.innerHTML = content;
+  legend.innerHTML += content;
 
   // Now, make the check boxes do something:
   for (var i in roadchecks) {
