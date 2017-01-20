@@ -1,4 +1,5 @@
-var directionsDisplay;
+var directionsDisplay = null;
+var directionsService = null;
 var map = null;
 var elevator = null;
 var polyline;

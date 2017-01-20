@@ -123,8 +123,8 @@ function initMap() {
     poly.setMap(null);
   });
 
-  var directionsService = new google.maps.DirectionsService;
-  var directionsDisplay = new google.maps.DirectionsRenderer({
+  directionsService = new google.maps.DirectionsService;
+  directionsDisplay = new google.maps.DirectionsRenderer({
     draggable: true,
     map: map,
     panel: document.getElementById('right-panel'),
@@ -132,12 +132,6 @@ function initMap() {
       strokeOpacity: .3
     }
   });
-  var control = document.getElementById('legend');
-  populateLegend();
-  /*
-  control.style.display = 'block';
-  */
-  map.controls[google.maps.ControlPosition.RIGHT_TOP].push(control);
 
   document.getElementById('submit').addEventListener('click', function() {
     /*
@@ -160,6 +154,15 @@ function initMap() {
       'routeindex_changed',
       updateRoutes
   );
+
+  document.getElementById("open_maps").onclick = openMapsUrl;
+
+  var control = document.getElementById('legend');
+  populateLegend();
+  /*
+  control.style.display = 'block';
+  */
+  map.controls[google.maps.ControlPosition.RIGHT_TOP].push(control);
 
   database_fetch(parking_table, [ "id", "lat", "lon", "notes", "loc_type" ], function() {
     if (this.readyState == 4 && this.status == 200) {
@@ -321,7 +324,9 @@ function displayRoute(origin, destination, service, display) {
   }, function(response, status) {
     if (status === 'OK') {
       display.setDirections(response);
+      $("#open_maps").removeClass("hide");
     } else {
+      $("#open_maps").addClass("hide");
       alert('Could not display directions due to: ' + status);
     }
   });
@@ -540,4 +545,25 @@ function drawCoordinates(coords, id, type) {
       });
     }
   });
+}
+
+function openMapsUrl() {
+  // Encodes the current directions as a google maps url and sends it out.
+  var url = "https://www.google.com/maps/dir/";
+  legs = directionsDisplay.getDirections().routes[directionsDisplay.getRouteIndex()].legs;
+  url += legs[0].start_location.toString() + "/";
+
+  for (var i in legs) {
+    leg = legs[i];
+    waypoints = leg.via_waypoints;
+    for (var j in waypoints) {
+      // Will append the lat/lon of each waypoint.
+      url += waypoints[j].toString() + "/";
+    }
+    url += leg.end_location.toString() + "/";
+  }
+
+  url += "data=!4m2!4m1!3e1"; // Magic numbers to show bicycling directions
+
+  window.open(url, "_blank");
 }
