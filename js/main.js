@@ -103,15 +103,26 @@ function initMap() {
   if (document.getElementById('edit_mode') != null) {
     document.getElementById('edit_mode').addEventListener('change', function() {
       if (this.value == 'view') {
+        for (var i in allMarkers) {
+          allMarkers[i].marker.setDraggable(false);
+        }
         if (placingListener) {
           placingListener.remove();
         }
         drawingManager.setMap(null);
       } else if (this.value == 'parking') {
+        // Make all markers draggable.
+        for (var i in allMarkers) {
+          allMarkers[i].marker.setDraggable(true);
+        }
+        // Remove drawer and allow markers to be placed.
         placingListener = google.maps.event.addListener(
             map, 'click', function(event) { placeMarker(event.latLng, -1, null, 0); });
         drawingManager.setMap(null);
       } else if (this.value == 'roads') {
+        for (var i in allMarkers) {
+          allMarkers[i].marker.setDraggable(false);
+        }
         if (placingListener) {
           placingListener.remove();
         }
@@ -137,11 +148,6 @@ function initMap() {
   });
 
   document.getElementById('submit').addEventListener('click', function() {
-    /*
-    displayRoute(document.getElementById('start_address').value,
-                 document.getElementById('end_address').value,
-                 directionsService, directionsDisplay);
-                 */
     var m1 = [new google.maps.Marker()];
     var m2 = [new google.maps.Marker()];
     geocodeAddress(geocoder, map, 'start_address', m1, m1, m2,
@@ -162,9 +168,6 @@ function initMap() {
 
   var control = document.getElementById('legend');
   populateLegend();
-  /*
-  control.style.display = 'block';
-  */
   map.controls[google.maps.ControlPosition.RIGHT_TOP].push(control);
 
   database_fetch(parking_table, [ "id", "lat", "lon", "notes", "loc_type" ], function() {
@@ -242,7 +245,6 @@ function populateLegend() {
       var roads = $.grep(allRoads, function(e){ return e.type == type; });
       for (var j in roads) {
         var road = roads[j];
-        console.log(road);
         road.road.setVisible(this.checked);
       }
     }
@@ -343,60 +345,70 @@ function placeMarker(location, id, notes, type) {
     icon: LocsEnum.icons[type],
     draggable: false // TODO(james): Make it constructive to have this as true.
   });
-  var button_id = "delete_marker"+id;
-  var infoButton = "<input id=" + button_id +
+  var button_id = "delete_marker"+markerInc;
+  var deleteButton = "<input id=" + button_id +
                     " type=\"button\" value=\"delete\"><br>";
-  var infoContent = (notes == null ? "" : notes);
+  var info_id = "info_content"+markerInc;
+  var infoContent = "<span id='"+info_id+"'></span>"+(notes == null ? "" : notes);
   var infoWindow = new google.maps.InfoWindow({
     content: infoContent,
     maxWidth: 200,
   });
 
-  if (id == -1) {
-    markerInc++;
-    var content_id = "marker_content"+markerInc;
-    var save_id = "marker_save"+markerInc;
-    var type_id = "line_type"+markerInc;
-    var createContent = "<input id=\"" + content_id +
-                        "\" type=textbox><br><input id=" + save_id +
-                        " type=\"button\" value=\"save\">"+
-                        "<select id=\"" + type_id + "\">";
-    for (var prop in LocsEnum) {
-      if (typeof(LocsEnum[prop]) == "number") {
-        createContent += "<option value='" + prop + "'>" +
-                         LocsEnum.desc[LocsEnum[prop]] + "</option>";
-      }
+  markerInc++;
+  var content_id = "marker_content"+markerInc;
+  var save_id = "marker_save"+markerInc;
+  var type_id = "line_type"+markerInc;
+  var createContent = "<input id=\"" + content_id +
+                      "\" type=textbox><br><input id=" + save_id +
+                      " type=\"button\" value=\"save\">"+
+                      "<select id=\"" + type_id + "\">";
+  for (var prop in LocsEnum) {
+    if (typeof(LocsEnum[prop]) == "number") {
+      createContent += "<option value='" + prop + "'>" +
+                       LocsEnum.desc[LocsEnum[prop]] + "</option>";
     }
-    createContent += "</select>";
-    var createWindow = new google.maps.InfoWindow({
-      content: createContent,
-      maxWidth: 200,
+  }
+  createContent += "</select>";
+  var createWindow = new google.maps.InfoWindow({
+    content: createContent,
+    maxWidth: 200,
+  });
+  var save_fun = function() {
+    type = LocsEnum[document.getElementById(type_id).value];
+    marker.setIcon(LocsEnum.icons[type]);
+    notes = document.getElementById(content_id).value;
+    if (id != -1) {
+      for (var i in allMarkers) {
+        if (allMarkers[i].id == id) {
+          allMarkers.splice(i, 1);
+        }
+      }
+      database_remove(parking_table, id);
+    }
+    id = database_insert(parking_table, [ "lat", "lon", "notes", "loc_type" ], [
+      [location.lat()],
+      [location.lng()],
+      [notes],
+      [type]
+    ]);
+    infoContent += notes;
+    infoWindow.setContent(deleteButton+infoContent);
+    createWindow.close();
+    allMarkers.push({
+      marker: marker,
+      id: id,
+      type: type,
     });
+  };
+  if (id == -1) {
     createWindow.open(map, marker);
     createWindow.addListener('closeclick', function() {
       if (id == -1) {
         marker.setVisible(false);
       }
     });
-    document.getElementById(save_id).onclick = function() {
-      type = LocsEnum[document.getElementById(type_id).value];
-      marker.setIcon(LocsEnum.icons[type]);
-      notes = document.getElementById(content_id).value;
-      id = database_insert(parking_table, [ "lat", "lon", "notes", "loc_type" ], [
-        [location.lat()],
-        [location.lng()],
-        [notes],
-        [type]
-      ]);
-      infoContent += notes;
-      infoWindow.setContent(infoButton+infoContent);
-      createWindow.close();
-      allMarkers.push({
-        marker: marker,
-        id: id,
-        type: type,
-      });
-    };
+    document.getElementById(save_id).onclick = save_fun;
   } else {
     allMarkers.push({
       marker: marker,
@@ -406,22 +418,49 @@ function placeMarker(location, id, notes, type) {
   }
 
   marker.addListener('click', function() {
+    if (id == -1) {
+      // It is still being created, do nothing.
+      return;
+    }
     var viewing = true;
     if (document.getElementById('edit_mode') != null) {
       viewing = document.getElementById('edit_mode').value == 'view';
     }
     if (viewing) {
-      infoWindow.setContent(infoContent);
-      infoWindow.open(map, this);
+      if (document.getElementById(info_id) != null) {
+        // The info box is open, close it.
+        // Don't close it if it is the create window, as
+        // they may still be editting.
+        infoWindow.close();
+        return;
+      } else {
+        infoWindow.setContent(infoContent);
+        infoWindow.open(map, this);
+      }
     } else {
-      infoWindow.setContent(infoButton+infoContent);
-      infoWindow.open(map, this);
+      infoWindow.close();
+      createWindow.setContent(createContent+deleteButton);
+      createWindow.open(map, this);
+      document.getElementById(content_id).value = notes;
+      document.getElementById(save_id).onclick = save_fun;
       document.getElementById(button_id).addEventListener('click', function () {
         marker.setMap(null);
         if (id != -1) {
           database_remove(parking_table, id);
         }
       });
+    }
+  });
+
+  marker.addListener('dragend', function() {
+    if (id != -1) {
+      database_remove(parking_table, id);
+      database_insert(parking_table, ["id", "lat", "lon", "notes", "loc_type"], [
+          [id],
+          [this.getPosition().lat()],
+          [this.getPosition().lng()],
+          [notes],
+          [type]]);
     }
   });
 }
@@ -490,6 +529,11 @@ function drawCoordinates(coords, id, type) {
     var createWindow = new google.maps.InfoWindow({
       content: createContent,
       maxWidth: 200,
+    });
+    createWindow.addListener('closeclick', function() {
+      if (id == -1) {
+        snappedPolyline.setVisible(false);
+      }
     });
     createWindow.open(map, lineMarker);
     document.getElementById(save_id).onclick = function() {
