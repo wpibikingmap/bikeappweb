@@ -45,19 +45,22 @@ var RoadsEnum = {
   },
 };
 function initMap() {
+  LocsEnum.icons = {
+    0: null,
+    1: {url: iconBase + 'parking_lot_maps.png', anchor: new google.maps.Point(13, 13),
+        scaledSize: new google.maps.Size(25, 25)},
+    2: {url: iconBase + 'capital_big_highlight.png', anchor: new google.maps.Point(10, 10),
+        scaledSize: new google.maps.Size(20, 20)},
+    3: {url: iconBase + 'caution.png', anchor: new google.maps.Point(15, 15),
+        scaledSize: new google.maps.Size(30, 30)},
+  };
+
   map = new google.maps.Map(document.getElementById('map'), {
     // Zoom on the city of worcester
     zoom: 13,
     center: {lat: 42.26, lng: -71.8},
     mapTypeId: 'terrain'
   });
-
-  LocsEnum.icons = {
-    0: null,
-    1: {url: iconBase + 'parking_lot_maps.png', scaledSize: new google.maps.Size(25, 25)},
-    2: {url: iconBase + 'capital_big_highlight.png', scaledSize: new google.maps.Size(20, 20)},
-    3: {url: iconBase + 'caution.png', scaledSize: new google.maps.Size(30, 30)},
-  };
 
   elevator = new google.maps.ElevationService();
 
