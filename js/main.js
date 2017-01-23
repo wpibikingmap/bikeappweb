@@ -83,6 +83,7 @@ function initMap() {
   document.getElementById('terrain_check').onclick = function() {
     map.setMapTypeId(document.getElementById('terrain_check').checked ? 'terrain' : 'roadmap');
   }
+  document.getElementById('downhill_check').onclick = updateRoutes;
 
   var drawingManager = new google.maps.drawing.DrawingManager({
     drawingMode: google.maps.drawing.OverlayType.POLYLINE,

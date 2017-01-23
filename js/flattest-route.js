@@ -155,14 +155,13 @@ function updateRoutes() {
     if (updating) return;
     updating = true;
     setTimeout(function () { updating = false; }, 100);
-    console.log("Updating routes");
     // Check if the path has been populated, if it has been already
     // populated, clear it.
 
-    var routes = this.directions.routes;
-    var path = routes[this.routeIndex].overview_path;
-    distance = routes[this.routeIndex].legs[0].distance;
-    duration = routes[this.routeIndex].legs[0].duration;
+    var routes = directionsDisplay.directions.routes;
+    var path = routes[directionsDisplay.routeIndex].overview_path;
+    distance = routes[directionsDisplay.routeIndex].legs[0].distance;
+    duration = routes[directionsDisplay.routeIndex].legs[0].duration;
 
     /* Shows distance in miles or kilometres, depending on measurement mode. */
     if(measurementMode == "miles"){
@@ -307,7 +306,9 @@ function drawPolyline (elevations, slopes) {
             elevations[i].location,
             elevations[i+1].location
         ];
-        var absSlope = Math.abs(slopes[i].slope);
+        var absSlope = document.getElementById('downhill_check').checked ?
+                         Math.abs(slopes[i].slope) :
+                         slopes[i].slope;
         if (absSlope <= 5) {
             pathColor = "#3CB371";
         } else if (absSlope <= 10) {
