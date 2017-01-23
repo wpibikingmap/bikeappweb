@@ -67,9 +67,6 @@ function initMap() {
   initAutoComplete('start_address');
   initAutoComplete('end_address');
   var geocoder = new google.maps.Geocoder();
-  var trafficLayer = new google.maps.TrafficLayer();
-  var bikeLayer = new google.maps.BicyclingLayer();
-  bikeLayer.setMap(map);
 
   var control = document.getElementById('legend');
   populateLegend();
@@ -249,6 +246,9 @@ function populateLegend() {
     }
   }
 
+  var trafficLayer = new google.maps.TrafficLayer();
+  var bikeLayer = new google.maps.BicyclingLayer();
+  bikeLayer.setMap(map);
   // Set up buttons for switching maps views
   document.getElementById('traffic_radio').onclick = function() {
     bikeLayer.setMap(null);
