@@ -25,18 +25,6 @@
         <div class="col-md-3">
 
           See <a href="https://github.com/wpibikingmap/bikeappweb/blob/master/README.md" target="_blank">here</a> for some documentation.
-          <div class="radio"><label>
-            <input id="traffic_radio" type="radio" name="layer_display" value="traffic"> Show Traffic
-          </label></div>
-          <div class="radio"><label>
-            <input id="bike_radio" type="radio" name="layer_display" value="bicycle" checked> Show Bicycling
-          </label></div>
-          <div class="checkbox"><label>
-            <input id="terrain_check" type="checkbox" checked> Show Elevation Lines
-          </label></div>
-          <div class="checkbox"><label>
-            <input id="downhill_check" type="checkbox"> Show downhill slopes
-          </label></div>
           <select class="form-control" id="edit_mode">
             <option value="view">View</option>
             <option value="parking">Edit Markers</option>
@@ -54,7 +42,21 @@
       <div align="right">
       <button class="btn btn-xs" data-toggle="collapse" data-target="#legend_content">Legend</button>
       </div>
-      <div id="legend_content" class="collapse in"></div>
+      <div id="legend_content" class="collapse in">
+        <h6>Display Controls</h6>
+          <label class="radio-inline">
+            <input id="traffic_radio" type="radio" name="layer_display" value="traffic"> Show Google Traffic
+          </label> <br>
+          <label class="radio-inline">
+            <input id="bike_radio" type="radio" name="layer_display" value="bicycle" checked> Show Google Bicycling
+          </label> <br>
+          <label class="checkbox-inline">
+            <input id="terrain_check" type="checkbox" checked> Show Elevation Lines
+          </label> <br>
+          <label class="checkbox-inline">
+            <input id="downhill_check" type="checkbox"> Show Downhill Slopes
+          </label> <br>
+      </div>
     </div>
 
     <script src="https://code.jquery.com/jquery-1.9.1.min.js"></script>

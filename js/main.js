@@ -71,6 +71,10 @@ function initMap() {
   var bikeLayer = new google.maps.BicyclingLayer();
   bikeLayer.setMap(map);
 
+  var control = document.getElementById('legend');
+  populateLegend();
+  map.controls[google.maps.ControlPosition.RIGHT_TOP].push(control);
+
   // Set up buttons for switching maps views
   document.getElementById('traffic_radio').onclick = function() {
     bikeLayer.setMap(null);
@@ -166,10 +170,6 @@ function initMap() {
   );
 
   document.getElementById("open_maps").onclick = openMapsUrl;
-
-  var control = document.getElementById('legend');
-  populateLegend();
-  map.controls[google.maps.ControlPosition.RIGHT_TOP].push(control);
 
   database_fetch(parking_table, [ "id", "lat", "lon", "notes", "loc_type" ], function() {
     if (this.readyState == 4 && this.status == 200) {
