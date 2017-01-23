@@ -9,26 +9,39 @@
   </head>
   <body>
     <div class="container">
-      <div class="col-md-6">
-        <div class="row">
-          <input id="start_address" type="textbox" placeholder="From Address">
-        </div>
-        <div class="row">
-          <input id="end_address" type="textbox" placeholder="To Address">
-        </div>
-        <div class="row">
-          <input id="submit" type="button" value="Directions" class="btn btn-primary">
-          <input id="open_maps" type="button" value="Open Directions in Google Maps" class="btn btn-primary hide">
-        </div>
-      </div>
       <div class="row">
         <div class="col-md-6">
-
-          See <a href="https://github.com/wpibikingmap/bikeappweb/blob/master/README.md" target="_blank">here</a> for some documentation.
+          <div class="row">
+            <input id="start_address" type="textbox" placeholder="From Address">
+          </div>
+          <div class="row">
+            <input id="end_address" type="textbox" placeholder="To Address">
+          </div>
+          <div class="row">
+            <input id="submit" type="button" value="Directions" class="btn btn-primary">
+            <input id="open_maps" type="button" value="Open Directions in Google Maps" class="btn btn-primary hide">
+          </div>
+        </div>
+        <div class="col-md-3" id="elevation_chart"></div>
+        <div class="col-md-3" id="slope_chart"></div>
       </div>
       <div class="row">
          <div class="col-md-9" id="map"></div>
-         <div class="col-md-3" id="right-panel"></div>
+         <div class="col-md-3 hide" id="right-panel"></div>
+      </div>
+      <div class="row">
+        <div class="col-md-6">
+        A few general notes about usage:
+        <ul>
+          <li>You can click on the various icons to see more details on each location</li>
+          <li>By selecting various checkboxes in the legend, you can show/hide different parts of the map</li>
+          <li>When you get directions, the colors refer to the steepness along the path</li>
+          <li>The "Show downhill slopes" affects whether downhills are shown in yellow/red in the directions</li>
+          <li>Select different "Suggested routes" to see alternative ways to get to your destination</li>
+          <li>Clicking on the "Legend" button will show/hide the legend</li>
+        </ul>
+        See <a href="https://github.com/wpibikingmap/bikeappweb/blob/master/README.md" target="_blank">here</a> for some more documentation and the source code for this project. <br>
+        </div>
       </div>
     </div>
 

@@ -75,20 +75,6 @@ function initMap() {
   populateLegend();
   map.controls[google.maps.ControlPosition.RIGHT_TOP].push(control);
 
-  // Set up buttons for switching maps views
-  document.getElementById('traffic_radio').onclick = function() {
-    bikeLayer.setMap(null);
-    trafficLayer.setMap(map);
-  }
-  document.getElementById('bike_radio').onclick = function() {
-    trafficLayer.setMap(null);
-    bikeLayer.setMap(map);
-  }
-  document.getElementById('terrain_check').onclick = function() {
-    map.setMapTypeId(document.getElementById('terrain_check').checked ? 'terrain' : 'roadmap');
-  }
-  document.getElementById('downhill_check').onclick = updateRoutes;
-
   var drawingManager = new google.maps.drawing.DrawingManager({
     drawingMode: google.maps.drawing.OverlayType.POLYLINE,
     drawingControl: true,
@@ -262,6 +248,20 @@ function populateLegend() {
       }
     }
   }
+
+  // Set up buttons for switching maps views
+  document.getElementById('traffic_radio').onclick = function() {
+    bikeLayer.setMap(null);
+    trafficLayer.setMap(map);
+  }
+  document.getElementById('bike_radio').onclick = function() {
+    trafficLayer.setMap(null);
+    bikeLayer.setMap(map);
+  }
+  document.getElementById('terrain_check').onclick = function() {
+    map.setMapTypeId(document.getElementById('terrain_check').checked ? 'terrain' : 'roadmap');
+  }
+  document.getElementById('downhill_check').onclick = updateRoutes;
 }
 
 function database_fetch(table, cols, callback) {
@@ -322,6 +322,7 @@ function geocodeAddress(geocoder, resultsMap, field_name, marker, m1, m2, disp, 
 }
 
 function displayRoute(origin, destination, service, display) {
+  $("#right-panel").removeClass("hide");
   service.route({
     origin: origin,
     destination: destination,

@@ -10,8 +10,8 @@ var duration = null;
 var markersArray = [];
 var elevations = [];
 var mapPaths = [];
-var measurementMode;
-var metricUnit = null;
+var measurementMode = "miles";
+var metricUnit = "feet";
 var feetMultiplicator = null;
 // Load the visualization API with the columnchart package.
 google.load("visualization", "1", {packages: ["columnchart"]});
@@ -184,7 +184,7 @@ function newPath(path) {
         // Initiate the path request.
     elevator.getElevationAlongPath(pathRequest, plotElevation);
 }
-var have_charts = false;
+var have_charts = true;
 // Take an array of elevation result objects, draws a path on the map
 // and plots the elevation profile on the chart.
 function plotElevation(elevations, status) {
@@ -225,10 +225,11 @@ function plotElevation(elevations, status) {
     if (have_charts) {
       elevationChart = new google.visualization.ColumnChart(elevationChartDiv.get(0));
       elevationChart.draw(map.elevationData, {
-          width: 350,
-          height: 245,
+          width: 225,
+          height: 120,
+          titleFontSize: 12,
           legend: 'none',
-          titleY: 'Elevation ('+metricUnit+')'
+          title: 'Elevation ('+metricUnit+')'
       });
     }
     changeElevation(elevationChart, elevations);
@@ -268,10 +269,11 @@ function plotSlope(elevations){
     slopeChart = new google.visualization.ColumnChart(slopeChartDiv.get(0));
     if (have_charts) {
       slopeChart.draw(map.slopeData, {
-          width: 350,
-          height: 245,
+          width: 225,
+          height: 120,
+          titleFontSize: 12,
           legend: 'none',
-          titleY: 'slope %'
+          title: 'slope %'
       });
       $('.chart').removeClass('hide');
     }
