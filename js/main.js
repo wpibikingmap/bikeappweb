@@ -20,6 +20,7 @@ var LocsEnum = {
     3: 'Dangerous Intersection',
   },
 };
+var ReverseLocsEnum = {};
 var RoadsEnum = {
   LANE: 1,
   SHARROW: 2,
@@ -54,6 +55,11 @@ function initMap() {
     3: {url: iconBase + 'caution.png', anchor: new google.maps.Point(15, 15),
         scaledSize: new google.maps.Size(30, 30)},
   };
+  for (var prop in LocsEnum) {
+    if (typeof(LocsEnum[prop]) == "number") {
+      ReverseLocsEnum[LocsEnum[prop]] = prop;
+    }
+  }
 
   map = new google.maps.Map(document.getElementById('map'), {
     // Zoom on the city of worcester
@@ -444,6 +450,7 @@ function placeMarker(location, id, notes, type) {
       createWindow.setContent(createContent+deleteButton);
       createWindow.open(map, this);
       document.getElementById(content_id).value = notes;
+      document.getElementById(type_id).value = ReverseLocsEnum[type];
       document.getElementById(save_id).onclick = save_fun;
       document.getElementById(button_id).addEventListener('click', function () {
         marker.setMap(null);
