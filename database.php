@@ -20,11 +20,27 @@ if ($conn->connect_errno) {
       die('Could not connect: ' . mysqli_error($conn));
 }
 
+$table = $conn->real_escape_string($_REQUEST['table']);
+delete_val($keys, 'table');
+
+require_once './includes/common.inc';
+retrieve_session();
+$valid_user = is_valid_user();
+# If they are not a valid user, then they can only:
+# -do fetch actions OR
+# -do insert/delete actions on specifically allowed tables
+$allowed_tables = ['suggested_locations', 'suggested_roads'];
+if (!$valid_user) {
+  if ($action != "fetch") {
+    if (!in_array($table, $allowed_tables)) {
+      die('Invalid permissions');
+    }
+  }
+}
+
 // TODO(james): Properly escape everything for security, including the cols in
 // the fetch and the variables in the insert and the id in the remove, as well
 // as every other possible field.
-$table = $conn->real_escape_string($_REQUEST['table']);
-delete_val($keys, 'table');
 if ($action == "insert") {
   $arraylen = count($keys);
   if ($arraylen > 0) {

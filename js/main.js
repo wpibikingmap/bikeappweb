@@ -1,13 +1,23 @@
 var geocoded = false;
 var parking_table ='locations';
 var sharrows_table ='roads';
+var slocs_table ='suggested_locations';
+var sroads_table ='suggested_roads';
 // For type ids for various things (which show up in the database tables), we
 // use incrementing positive numbers for things that locations (eg, 1=parking,
 // 2=shop, 3=intersection), positive incrementing for lines (eg, 1=lane,
 // 2=sharrow, 3=dangerous) and 0 as a special/"none" value.
 var iconBase = 'https://maps.google.com/mapfiles/kml/shapes/';
+var suggestedLabel = {
+  fontFamily : "arial",
+  color : "red",
+  fontSize : "20px",
+  fontWeight : "900",
+  text : "N"
+};
 var allMarkers = [];
 var allRoads = [];
+var isValidUser = false;
 // TODO: Make it so that you only have to change things here to add/remove types.
 var LocsEnum = {
   PARKING: 1,
@@ -53,28 +63,37 @@ function initMap() {
     1 : {
       url : iconBase + 'parking_lot_maps.png',
       anchor : new google.maps.Point(13, 13),
-      scaledSize : new google.maps.Size(25, 25)
+      scaledSize : new google.maps.Size(25, 25),
+      labelOrigin : new google.maps.Point(5, 5),
     },
     2 : {
       url : iconBase + 'capital_big_highlight.png',
       anchor : new google.maps.Point(10, 10),
-      scaledSize : new google.maps.Size(20, 20)
+      scaledSize : new google.maps.Size(20, 20),
+      labelOrigin : new google.maps.Point(5, 5),
     },
     3 : {
       url : iconBase + 'caution.png',
       anchor : new google.maps.Point(15, 15),
-      scaledSize : new google.maps.Size(30, 30)
+      scaledSize : new google.maps.Size(30, 30),
+      labelOrigin : new google.maps.Point(5, 5),
     },
     4 : {
       url : iconBase + 'info.png',
       anchor : new google.maps.Point(15, 15),
-      scaledSize : new google.maps.Size(30, 30)
+      scaledSize : new google.maps.Size(30, 30),
+      labelOrigin : new google.maps.Point(5, 5),
     },
   };
   for (var prop in LocsEnum) {
     if (typeof(LocsEnum[prop]) == "number") {
       ReverseLocsEnum[LocsEnum[prop]] = prop;
     }
+  }
+
+  if (document.getElementById("add_data") === null) {
+    $("#edit_mode").removeClass("hide");
+    isValidUser = true;
   }
 
   map = new google.maps.Map(document.getElementById('map'), {
@@ -109,12 +128,29 @@ function initMap() {
     }
   });
 
+  if (!isValidUser) {
+    document.getElementById("add_data").onclick = function() {
+      $("#add_data").addClass("hide");
+      $("#edit_mode").removeClass("hide");
+      $("#add-data-help").removeClass("hide");
+    };
+  }
+
   var placingListener;
   if (document.getElementById('edit_mode') != null) {
     document.getElementById('edit_mode').addEventListener('change', function() {
       if (this.value == 'view') {
         for (var i in allMarkers) {
           allMarkers[i].marker.setDraggable(false);
+          if (allMarkers[i].table == slocs_table) {
+            allMarkers[i].marker.setVisible(false);
+          }
+        }
+        for (var i in allRoads) {
+          if (allRoads[i].table == sroads_table) {
+            allRoads[i].road.setVisible(false);
+            allRoads[i].marker.setVisible(false);
+          }
         }
         if (placingListener) {
           placingListener.remove();
@@ -123,15 +159,40 @@ function initMap() {
       } else if (this.value == 'parking') {
         // Make all markers draggable.
         for (var i in allMarkers) {
-          allMarkers[i].marker.setDraggable(true);
+          var mark = allMarkers[i].marker;
+          if (isValidUser) {
+            mark.setDraggable(true);
+          }
+          if (allMarkers[i].table == slocs_table) {
+            mark.setVisible(true);
+            mark.setDraggable(true);
+          }
+        }
+        for (var i in allRoads) {
+          if (allRoads[i].table == sroads_table) {
+            allRoads[i].road.setVisible(false);
+            allRoads[i].marker.setVisible(false);
+          }
         }
         // Remove drawer and allow markers to be placed.
-        placingListener = google.maps.event.addListener(
-            map, 'click', function(event) { placeMarker(event.latLng, -1, null, 0); });
+        placingListener =
+            google.maps.event.addListener(map, 'click', function(event) {
+              placeMarker(event.latLng, -1, null, 0,
+                          isValidUser ? parking_table : slocs_table);
+            });
         drawingManager.setMap(null);
       } else if (this.value == 'roads') {
         for (var i in allMarkers) {
           allMarkers[i].marker.setDraggable(false);
+          if (allMarkers[i].table == slocs_table) {
+            allMarkers[i].marker.setVisible(false);
+          }
+        }
+        for (var i in allRoads) {
+          if (allRoads[i].table == sroads_table) {
+            allRoads[i].road.setVisible(true);
+            allRoads[i].marker.setVisible(true);
+          }
         }
         if (placingListener) {
           placingListener.remove();
@@ -183,12 +244,29 @@ function initMap() {
       for (var i = 0; i < markers.length; i++) {
         var m = markers[i];
         var loc = new google.maps.LatLng(m[1], m[2]);
-        placeMarker(loc, m[0], m[3], m[4]);
+        placeMarker(loc, m[0], m[3], m[4], parking_table);
       }
     }
   });
 
-  database_fetch(sharrows_table, ["id", "pindex", "lat", "lon", "line_type"], function() {
+  database_fetch(slocs_table, [ "id", "lat", "lon", "notes", "loc_type" ], function() {
+    if (this.readyState == 4 && this.status == 200) {
+      // TODO(james): Cleanly handle no response text.
+      var markers = JSON.parse(this.responseText);
+      for (var i = 0; i < markers.length; i++) {
+        var m = markers[i];
+        var loc = new google.maps.LatLng(m[1], m[2]);
+        var mark = placeMarker(loc, m[0], m[3], m[4], slocs_table);
+        mark.setVisible(false);
+      }
+    }
+  });
+  fetchRoads(sharrows_table, true);
+  fetchRoads(sroads_table, false);
+}
+
+function fetchRoads(table, visible) {
+  database_fetch(table, ["id", "pindex", "lat", "lon", "line_type"], function() {
     if (this.readyState == 4 && this.status == 200) {
       var points = JSON.parse(this.responseText);
       // Sort by id and index.
@@ -201,7 +279,7 @@ function initMap() {
         var row = points[i];
         var id = row[0];
         if (id != cur_id) {
-          drawCoordinates(coords, cur_id, points[i-1][4]);
+          drawCoordinates(coords, cur_id, points[i-1][4], table).setVisible(visible);
           cur_id = id;
           coords = [];
         } else {
@@ -209,7 +287,10 @@ function initMap() {
         }
       }
       // Otherwise, the last one doesn't get drawn...
-      drawCoordinates(coords, cur_id, points[points.length-1][4]);
+      var road = drawCoordinates(coords, cur_id, points[points.length - 1][4], table);
+      road.setVisible(visible);
+      $.grep(allRoads,
+             function(e){return e.road === road})[0].marker.setVisible(visible);
     }
   });
 }
@@ -362,16 +443,22 @@ function displayRoute(origin, destination, service, display) {
 }
 
 var markerInc = 0;
-function placeMarker(location, id, notes, type) {
+function placeMarker(location, id, notes, type, table) {
   var marker = new google.maps.Marker({
     position: location,
     map: map,
     icon: LocsEnum.icons[type],
     draggable: false // TODO(james): Make it constructive to have this as true.
   });
+  if (table == slocs_table) {
+    marker.setLabel(suggestedLabel);
+  }
   var button_id = "delete_marker"+markerInc;
   var deleteButton = "<input id=" + button_id +
-                    " type=\"button\" value=\"delete\"><br>";
+                    " type=\"button\" value=\"delete\">";
+  var promote_id = "promote_marker"+markerInc;
+  var promoteButton = "<input id=" + promote_id +
+                    " type=\"button\" value=\"promote\">";
   var info_id = "info_content"+markerInc;
   var infoContent = "<span id='"+info_id+"'></span>"+(notes == null ? "" : notes);
   var infoWindow = new google.maps.InfoWindow({
@@ -408,9 +495,9 @@ function placeMarker(location, id, notes, type) {
           allMarkers.splice(i, 1);
         }
       }
-      database_remove(parking_table, id);
+      database_remove(table, id);
     }
-    id = database_insert(parking_table, [ "lat", "lon", "notes", "loc_type" ], [
+    id = database_insert(table, [ "lat", "lon", "notes", "loc_type" ], [
       [location.lat()],
       [location.lng()],
       [notes],
@@ -423,6 +510,7 @@ function placeMarker(location, id, notes, type) {
       marker: marker,
       id: id,
       type: type,
+      table: table,
     });
   };
   if (id == -1) {
@@ -438,6 +526,7 @@ function placeMarker(location, id, notes, type) {
       marker: marker,
       id: id,
       type: type,
+      table: table,
     });
   }
 
@@ -450,6 +539,10 @@ function placeMarker(location, id, notes, type) {
     if (document.getElementById('edit_mode') != null) {
       viewing = document.getElementById('edit_mode').value == 'view';
     }
+    if (!viewing) {
+      viewing = isValidUser ? false : (table == slocs_table ? false : true);
+    }
+    var can_promote = isValidUser && table == slocs_table;
     if (viewing) {
       if (document.getElementById(info_id) != null) {
         // The info box is open, close it.
@@ -463,7 +556,8 @@ function placeMarker(location, id, notes, type) {
       }
     } else {
       infoWindow.close();
-      createWindow.setContent(createContent+deleteButton);
+      createWindow.setContent(createContent + deleteButton +
+                              (can_promote ? promoteButton : ""));
       createWindow.open(map, this);
       document.getElementById(content_id).value = notes;
       document.getElementById(type_id).value = ReverseLocsEnum[type];
@@ -471,16 +565,33 @@ function placeMarker(location, id, notes, type) {
       document.getElementById(button_id).addEventListener('click', function () {
         marker.setMap(null);
         if (id != -1) {
-          database_remove(parking_table, id);
+          database_remove(table, id);
         }
       });
+      if (can_promote) {
+        document.getElementById(promote_id).addEventListener('click', function () {
+          database_remove(table, id);
+          id = database_insert(parking_table,
+                               [ "lat", "lon", "notes", "loc_type" ], [
+            [marker.getPosition().lat()],
+            [marker.getPosition().lng()],
+            [notes],
+            [type]
+          ]);
+          var markerData = $.grep(allMarkers, function(e){ return e.marker === marker; })[0];
+          markerData.id = id;
+          markerData.table = parking_table;
+          table = parking_table;
+          markerData.marker.setLabel(null);
+        });
+      }
     }
   });
 
   marker.addListener('dragend', function() {
     if (id != -1) {
-      database_remove(parking_table, id);
-      database_insert(parking_table, ["id", "lat", "lon", "notes", "loc_type"], [
+      database_remove(table, id);
+      database_insert(table, ["id", "lat", "lon", "notes", "loc_type"], [
           [id],
           [this.getPosition().lat()],
           [this.getPosition().lng()],
@@ -488,6 +599,8 @@ function placeMarker(location, id, notes, type) {
           [type]]);
     }
   });
+
+  return marker;
 }
 
 function snapToRoad(path) {
@@ -502,7 +615,8 @@ function snapToRoad(path) {
       path: pathValues.join('|')
       }, function(data) {
         var snappedCoordinates = processSnapToRoadResponse(data);
-        drawCoordinates(snappedCoordinates, -1, -1);
+        drawCoordinates(snappedCoordinates, -1, -1,
+                        isValidUser ? sharrows_table : sroads_table);
       });
 }
 
@@ -520,7 +634,7 @@ function processSnapToRoadResponse(data) {
 
 // Draws the snapped polyline (after processing snap-to-road response).
 var lineInc = 0;
-function drawCoordinates(coords, id, type) {
+function drawCoordinates(coords, id, type, table) {
   var snappedPolyline = new google.maps.Polyline({
     path: coords,
     strokeColor: RoadsEnum.colors[type],
@@ -530,7 +644,9 @@ function drawCoordinates(coords, id, type) {
   var lineMarker = new google.maps.Marker({
     position: coords[0],
     map: map,
-    visible: false,
+    icon: {url: "empty.png", size: {width: 0, height: 0}},
+    label: table == sroads_table ? suggestedLabel : null,
+    visible: true,
   });
 
   snappedPolyline.setMap(map);
@@ -567,8 +683,8 @@ function drawCoordinates(coords, id, type) {
       // We need to add this line to the database.
       // Because id auto increments, first send in one row to get an id then add everything else.
       c0 = coords[0];
-      id = database_insert(sharrows_table, ["pindex", "lat", "lon", "line_type"], [[0], [c0.lat()],
-                                           [c0.lng()], [type]]);
+      id = database_insert(table, [ "pindex", "lat", "lon", "line_type" ],
+                           [ [0], [c0.lat()], [c0.lng()], [type] ]);
       if (id != -1) {
         var vals = [[], [], [], [], []];
         for (var i = 1; i < coords.length; i++) {
@@ -578,13 +694,16 @@ function drawCoordinates(coords, id, type) {
           vals[3].push(coords[i].lng());
           vals[4].push(type);
         }
-        database_insert(sharrows_table, ["id", "pindex", "lat", "lon", "line_type"], vals);
+        database_insert(table, [ "id", "pindex", "lat", "lon", "line_type" ],
+                        vals);
         createWindow.close();
 
         allRoads.push({
           road: snappedPolyline,
           id: id,
           type: type,
+          table: table,
+          marker: lineMarker,
         });
       }
     }
@@ -593,6 +712,8 @@ function drawCoordinates(coords, id, type) {
       road: snappedPolyline,
       id: id,
       type: type,
+      table: table,
+      marker: lineMarker,
     });
   }
 
@@ -600,23 +721,73 @@ function drawCoordinates(coords, id, type) {
     var button_id = "delete_line"+id;
     var infoContent =
         "<input id=" + button_id + " type=\"button\" value=\"delete\">";
+    var promote_id = "promote_marker"+id;
+    var promoteButton = "<input id=" + promote_id +
+                      " type=\"button\" value=\"promote\">";
     var infoWindow = new google.maps.InfoWindow({
       content: infoContent,
       maxWidth: 200,
     });
 
-    if (document.getElementById('edit_mode') != null &&
-        document.getElementById('edit_mode').value != 'view') {
+    var viewing = true;
+    if (document.getElementById('edit_mode') != null) {
+      viewing = document.getElementById('edit_mode').value == 'view';
+    }
+    if (!viewing) {
+      viewing = isValidUser ? false : (table == sroads_table ? false : true);
+    }
+    var can_promote = isValidUser && table == sroads_table;
+    if (!viewing) {
+      if (can_promote) {
+        infoWindow.setContent(infoContent + promoteButton);
+      } else {
+        infoWindow.setContent(infoContent);
+      }
       infoWindow.open(map, lineMarker);
       document.getElementById(button_id).addEventListener('click', function () {
         infoWindow.close();
         snappedPolyline.setMap(null);
         if (id != -1) {
-          database_remove(sharrows_table, id);
+          database_remove(table, id);
         }
       });
+
+      if (can_promote) {
+        document.getElementById(promote_id).addEventListener('click', function () {
+          if (id != -1) {
+            database_remove(table, id);
+            c0 = coords[0];
+            table = sharrows_table;
+            id = database_insert(table, [ "pindex", "lat", "lon", "line_type" ],
+                                 [ [0], [c0.lat()], [c0.lng()], [type] ]);
+            console.log(id);
+            if (id != -1) {
+              var vals = [[], [], [], [], []];
+              for (var i = 1; i < coords.length; i++) {
+                vals[0].push(id);
+                vals[1].push(i);
+                vals[2].push(coords[i].lat());
+                vals[3].push(coords[i].lng());
+                vals[4].push(type);
+              }
+              database_insert(table, [ "id", "pindex", "lat", "lon", "line_type" ],
+                              vals);
+              console.log(vals);
+              table = sharrows_table;
+              var roadData =
+                  $.grep(allRoads,
+                         function(e) { return e.road === snappedPolyline; })[0];
+              roadData.id = id;
+              roadData.table = sharrows_table;
+              roadData.marker.setLabel(null);
+            }
+          }
+        });
+      }
     }
   });
+
+  return snappedPolyline;
 }
 
 function openMapsUrl() {
