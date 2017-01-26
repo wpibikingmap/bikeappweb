@@ -448,7 +448,7 @@ function placeMarker(location, id, notes, type, table) {
     position: location,
     map: map,
     icon: LocsEnum.icons[type],
-    draggable: false // TODO(james): Make it constructive to have this as true.
+    draggable: id == -1,
   });
   if (table == slocs_table) {
     marker.setLabel(suggestedLabel);

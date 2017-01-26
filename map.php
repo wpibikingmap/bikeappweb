@@ -53,7 +53,7 @@ if (is_valid_user()) {
           <p> When displaying directions, the colors on the directions correspond
           to the steepness of the road.</p>
           <div id="add-data-help" class="hide">
-            In order to add data, change the selection from "view" to one of the editting
+            In order to add data, change the selection from "view" to one of the editing
             modes. You can then create new markers and lines (you can not edit existing ones).
             The new markers/lines will show up with a red "N"; when an administrator has a
             chance to take a look, they will approve any new changes. Any unapproved additions
