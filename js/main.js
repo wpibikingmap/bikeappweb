@@ -747,6 +747,7 @@ function drawCoordinates(coords, id, type, table) {
       document.getElementById(button_id).addEventListener('click', function () {
         infoWindow.close();
         snappedPolyline.setMap(null);
+        lineMarker.setMap(null);
         if (id != -1) {
           database_remove(table, id);
         }
