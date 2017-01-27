@@ -644,7 +644,7 @@ function drawCoordinates(coords, id, type, table) {
   var lineMarker = new google.maps.Marker({
     position: coords[0],
     map: map,
-    icon: {url: "empty.png", size: {width: 0, height: 0}},
+    icon: {url: "empty.png", size: {width: 30, height: 30}},
     label: table == sroads_table ? suggestedLabel : null,
     visible: true,
   });
