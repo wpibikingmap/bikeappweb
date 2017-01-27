@@ -41,10 +41,10 @@ var RoadsEnum = {
   FOO: 5,
   BAR: 6,
   colors: {
-    1: 'green',
+    1: '#5FF92E', // light green
     2: 'blue',
     3: 'red',
-    4: 'yellow',
+    4: '#FE32CA', // pink/purple
     5: 'orange',
     6: 'purple',
   },
