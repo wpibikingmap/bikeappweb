@@ -44,7 +44,7 @@ var RoadsEnum = {
     1: '#5FF92E', // light green
     2: 'blue',
     3: '#FE32CA', // pink/purple
-    4: 'red',
+//    4: 'red',
     5: 'orange',
     6: 'purple',
   },
@@ -52,10 +52,17 @@ var RoadsEnum = {
     1: 'Bike Lane',
     2: 'Sharrow',
     3: 'Risky Road',
-    4: 'Highway',
+//    4: 'Highway',
     5: 'Recreational Ride',
     6: 'Test Color',
   },
+  show: {
+    1: true,
+    2: true,
+    3: true,
+ //   4: false,
+    5: false,
+    6: false,
   },
 };
 function initMap() {
@@ -280,7 +287,10 @@ function fetchRoads(table, visible) {
         var row = points[i];
         var id = row[0];
         if (id != cur_id) {
-          drawCoordinates(coords, cur_id, points[i-1][4], table).setVisible(visible);
+          var road = drawCoordinates(coords, cur_id, points[i-1][4], table);
+          road.road.setVisible(visible);
+          $.grep(allRoads,
+                 function(e){return e.road === road})[0].marker.setVisible(visible);
           cur_id = id;
           coords = [];
         } else {
@@ -636,6 +646,9 @@ function processSnapToRoadResponse(data) {
 // Draws the snapped polyline (after processing snap-to-road response).
 var lineInc = 0;
 function drawCoordinates(coords, id, type, table) {
+  if (RoadsEnum.colors[type] == null) {
+    return;
+  }
   var snappedPolyline = new google.maps.Polyline({
     path: coords,
     strokeColor: RoadsEnum.colors[type],
