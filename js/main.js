@@ -37,14 +37,14 @@ var RoadsEnum = {
   LANE: 1,
   SHARROW: 2,
   RISKY: 3,
-  HIGHWAY: 4,
+//  HIGHWAY: 4,
   FOO: 5,
   BAR: 6,
   colors: {
     1: '#5FF92E', // light green
     2: 'blue',
-    3: 'red',
-    4: '#FE32CA', // pink/purple
+    3: '#FE32CA', // pink/purple
+    4: 'red',
     5: 'orange',
     6: 'purple',
   },
@@ -53,8 +53,9 @@ var RoadsEnum = {
     2: 'Sharrow',
     3: 'Risky Road',
     4: 'Highway',
-    5: 'Foo',
-    6: 'Bar',
+    5: 'Recreational Ride',
+    6: 'Test Color',
+  },
   },
 };
 function initMap() {
