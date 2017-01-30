@@ -288,9 +288,11 @@ function fetchRoads(table, visible) {
         var id = row[0];
         if (id != cur_id) {
           var road = drawCoordinates(coords, cur_id, points[i-1][4], table);
-          road.road.setVisible(visible);
-          $.grep(allRoads,
-                 function(e){return e.road === road})[0].marker.setVisible(visible);
+          if (road != null) {
+            road.setVisible(visible);
+            $.grep(allRoads,
+                   function(e){return e.road === road})[0].marker.setVisible(visible);
+          }
           cur_id = id;
           coords = [];
         } else {
@@ -647,7 +649,7 @@ function processSnapToRoadResponse(data) {
 var lineInc = 0;
 function drawCoordinates(coords, id, type, table) {
   if (RoadsEnum.colors[type] == null) {
-    return;
+    return null;
   }
   var snappedPolyline = new google.maps.Polyline({
     path: coords,
