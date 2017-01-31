@@ -322,15 +322,20 @@ function populateLegend() {
   var trafficLayer = new google.maps.TrafficLayer();
   var bikeLayer = new google.maps.BicyclingLayer();
   bikeLayer.setMap(map);
+  document.getElementById('google_layer').value = "biking";
   // Set up buttons for switching maps views
-  document.getElementById('traffic_radio').onclick = function() {
-    bikeLayer.setMap(null);
-    trafficLayer.setMap(map);
-  }
-  document.getElementById('bike_radio').onclick = function() {
-    trafficLayer.setMap(null);
-    bikeLayer.setMap(map);
-  }
+  document.getElementById('google_layer').addEventListener('change', function () {
+    if (this.value == "traffic") {
+      trafficLayer.setMap(map);
+      bikeLayer.setMap(null);
+    } else if (this.value == "biking") {
+      trafficLayer.setMap(null);
+      bikeLayer.setMap(map);
+    } else {
+      trafficLayer.setMap(null);
+      bikeLayer.setMap(null);
+    }
+  });
   document.getElementById('terrain_check').onclick = function() {
     map.setMapTypeId(document.getElementById('terrain_check').checked ? 'terrain' : 'roadmap');
   }

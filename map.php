@@ -87,12 +87,12 @@ if (is_valid_user()) {
       </div>
       <div id="legend_content" class="collapse in">
         <h6>Display Controls</h6>
-          <label class="radio-inline">
-            <input id="traffic_radio" type="radio" name="layer_display" value="traffic"> Show Google Traffic
-          </label> <br>
-          <label class="radio-inline">
-            <input id="bike_radio" type="radio" name="layer_display" value="bicycle" checked> Show Google Bicycling
-          </label> <br>
+          Google Data Layers: <br>
+          <select id="google_layer">
+            <option value="traffic"> Traffic Layer</option>
+            <option value="biking"> Biking Layer</option>
+            <option value="none"> Neither</option>
+          </select> <br>
           <label class="checkbox-inline">
             <input id="terrain_check" type="checkbox" checked> Show Elevation Lines
           </label> <br>
