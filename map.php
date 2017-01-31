@@ -50,8 +50,6 @@ if (is_valid_user()) {
       </div>
       <div class="row">
         <div class="col-md-9">
-          <p> When displaying directions, the colors on the directions correspond
-          to the steepness of the road.</p>
           <div id="add-data-help" class="hide">
             In order to add data, change the selection from "view" to one of the editing
             modes. You can then create new markers and lines (you can not edit existing ones).
@@ -86,8 +84,7 @@ if (is_valid_user()) {
       <button class="btn btn-xs" data-toggle="collapse" data-target="#legend_content">Legend</button>
       </div>
       <div id="legend_content" class="collapse in">
-        <h6>Display Controls</h6>
-          Google Data Layers: <br>
+          <h6>Google Data Layers</h6>
           <select id="google_layer">
             <option value="traffic"> Traffic Layer</option>
             <option value="biking"> Biking Layer</option>
@@ -95,10 +92,13 @@ if (is_valid_user()) {
           </select> <br>
           <label class="checkbox-inline">
             <input id="terrain_check" type="checkbox" checked> Show Elevation Lines
-          </label> <br>
-          <label class="checkbox-inline">
-            <input id="downhill_check" type="checkbox"> Show Downhill Slopes
-          </label> <br>
+          </label>
+          <div id="directions_controls" class="hide">
+            <h6>Directions</h6>
+            <label class="checkbox-inline">
+              <input id="downhill_check" type="checkbox"> Show Downhill Slopes
+            </label><br><br>
+          </div>
       </div>
     </div>
 

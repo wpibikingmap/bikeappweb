@@ -10,6 +10,7 @@ var duration = null;
 var markersArray = [];
 var elevations = [];
 var mapPaths = [];
+var pathColors;
 var measurementMode = "miles";
 var metricUnit = "feet";
 var feetMultiplicator = null;
@@ -312,16 +313,16 @@ function drawPolyline (elevations, slopes) {
                          Math.abs(slopes[i].slope) :
                          slopes[i].slope;
         if (absSlope <= 5) {
-            pathColor = "#3CB371";
+            pathColor = pathColors[5];
         } else if (absSlope <= 10) {
-            pathColor = "#FFFF00";
+            pathColor = pathColors[10];
         } else if (absSlope <= 15) {
-            pathColor = "#FF9800";
+            pathColor = pathColors[15];
         } else if (absSlope <= 20) {
-            pathColor = "#F44336";
+            pathColor = pathColors[20];
         }
         else {
-            pathColor = "#000000";
+            pathColor = pathColors[Infinity];
         }
         mapPath = new google.maps.Polyline({
             path: routePath,

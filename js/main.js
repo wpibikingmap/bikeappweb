@@ -18,6 +18,13 @@ var suggestedLabel = {
 var allMarkers = [];
 var allRoads = [];
 var isValidUser = false;
+var pathColors = {
+  5 : "#3CB371",
+  10 : "#FFFF00",
+  15 : "#FF9800",
+  20 : "#F44336",
+  Infinity : "#000000"
+};
 // TODO: Make it so that you only have to change things here to add/remove types.
 var LocsEnum = {
   PARKING: 1,
@@ -297,6 +304,19 @@ function populateLegend() {
   }
   legend.innerHTML += content;
 
+  // Add slopes for directions
+  var dirContent = "";
+  var previ = 0;
+  for (var i in pathColors) {
+    var itext = (i == Infinity) ? previ + "% grade and up"
+                                : previ + "% to " + i + "% grade";
+    console.log(itext);
+    dirContent += "<div class='color-box' style='background-color: " +
+                  pathColors[i] + "'></div>" + itext + "<br>";
+    previ = i;
+  }
+  document.getElementById("directions_controls").innerHTML += dirContent;
+
   // Now, make the check boxes do something:
   for (var i in roadchecks) {
     var checkbox = document.getElementById(roadchecks[i]);
@@ -410,6 +430,7 @@ function displayRoute(origin, destination, service, display) {
     if (status === 'OK') {
       display.setDirections(response);
       $("#open_maps").removeClass("hide");
+      $("#directions_controls").removeClass("hide");
     } else {
       $("#open_maps").addClass("hide");
       alert('Could not display directions due to: ' + status);
