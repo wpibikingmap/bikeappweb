@@ -46,6 +46,7 @@ var LocsEnum = {
   }
 };
 var ReverseLocsEnum = {};
+var ReverseRoadsEnum = {};
 var RoadsEnum = {
   LANE: 1,
   SHARROW: 2,
@@ -109,6 +110,11 @@ function initMap() {
   for (var prop in LocsEnum) {
     if (typeof(LocsEnum[prop]) == "number") {
       ReverseLocsEnum[LocsEnum[prop]] = prop;
+    }
+  }
+  for (var prop in RoadsEnum) {
+    if (typeof(RoadsEnum[prop]) == "number") {
+      ReverseRoadsEnum[RoadsEnum[prop]] = prop;
     }
   }
 
@@ -265,9 +271,8 @@ function fetchRoads(table, visible) {
           var road = drawCoordinates(coords, cur_id, points[i-1][4], table);
           cur_id = id;
           coords = [];
-        } else {
-          coords.push(new google.maps.LatLng(row[2], row[3]));
         }
+        coords.push(new google.maps.LatLng(row[2], row[3]));
       }
       // Otherwise, the last one doesn't get drawn...
       var road = drawCoordinates(coords, cur_id, points[points.length - 1][4], table);
@@ -310,7 +315,6 @@ function populateLegend() {
   for (var i in pathColors) {
     var itext = (i == Infinity) ? previ + "% grade and up"
                                 : previ + "% to " + i + "% grade";
-    console.log(itext);
     dirContent += "<div class='color-box' style='background-color: " +
                   pathColors[i] + "'></div>" + itext + "<br>";
     previ = i;
@@ -488,7 +492,7 @@ function placeMarker(location, id, notes, type, table) {
     notes = document.getElementById(content_id).value;
     if (id != -1) {
       for (var i in allMarkers) {
-        if (allMarkers[i].id == id) {
+        if (allMarkers[i].marker === marker) {
           allMarkers.splice(i, 1);
         }
       }
@@ -645,62 +649,75 @@ function drawCoordinates(coords, id, type, table) {
 
   snappedPolyline.setMap(map);
 
-  if (id == -1) {
-    lineInc++;
+  lineInc++;
 
-    var content_id = "line_content"+lineInc;
-    var save_id = "line_save"+lineInc;
-    var type_id = "line_type"+lineInc;
-    var createContent = "<input id=" + save_id +
-                        " type=\"button\" value=\"save\">"+
-                        "<select id=\"" + type_id + "\">";
-    for (var prop in RoadsEnum) {
-      if (typeof(RoadsEnum[prop]) == "number") {
-        createContent += "<option value='" + prop + "'>" +
-                         RoadsEnum.desc[RoadsEnum[prop]] + "</option>";
-      }
+  var content_id = "line_content"+lineInc;
+  var save_id = "line_save"+lineInc;
+  var type_id = "line_type"+lineInc;
+  var createContent = "<input id=" + save_id +
+                      " type=\"button\" value=\"save\">"+
+                      "<select id=\"" + type_id + "\">";
+  for (var prop in RoadsEnum) {
+    if (typeof(RoadsEnum[prop]) == "number") {
+      createContent += "<option value='" + prop + "'>" +
+                       RoadsEnum.desc[RoadsEnum[prop]] + "</option>";
     }
-    createContent += "</select>";
-    var createWindow = new google.maps.InfoWindow({
-      content: createContent,
-      maxWidth: 200,
-    });
+  }
+  createContent += "</select>";
+  var createWindow = new google.maps.InfoWindow({
+    content: createContent,
+    maxWidth: 200,
+  });
+  var save_fun = function() {
+    var type = RoadsEnum[document.getElementById(type_id).value];
+    snappedPolyline.setOptions({strokeColor: RoadsEnum.colors[type]});
+    // Remove it if we are editting
+    if (id != -1) {
+      for (var i in allRoads) {
+        if (allRoads[i].road === snappedPolyline) {
+          allRoads.splice(i, 1);
+        }
+      }
+      database_remove(table, id);
+    }
+    var vertices = snappedPolyline.getPath();
+    // We need to add this line to the database.
+    // Because id auto increments, first send in one row to get an id then add everything else.
+    c0 = vertices.getAt(0);
+    id = database_insert(table, [ "pindex", "lat", "lon", "line_type" ],
+                         [ [0], [c0.lat()], [c0.lng()], [type] ]);
+    if (id != -1) {
+      var vals = [[], [], [], [], []];
+      for (var i = 1; i < vertices.getLength(); i++) {
+        vals[0].push(id);
+        vals[1].push(i);
+        vals[2].push(vertices.getAt(i).lat());
+        vals[3].push(vertices.getAt(i).lng());
+        vals[4].push(type);
+      }
+      database_insert(table, [ "id", "pindex", "lat", "lon", "line_type" ],
+                      vals);
+      createWindow.close();
+
+      allRoads.push({
+        road: snappedPolyline,
+        id: id,
+        type: type,
+        table: table,
+        marker: lineMarker,
+      });
+    }
+    setRoadVisibilities();
+  }
+  if (id == -1) {
     createWindow.addListener('closeclick', function() {
       if (id == -1) {
         snappedPolyline.setVisible(false);
+        lineMarker.setVisible(false);
       }
     });
     createWindow.open(map, lineMarker);
-    document.getElementById(save_id).onclick = function() {
-      var type = RoadsEnum[document.getElementById(type_id).value];
-      snappedPolyline.setOptions({strokeColor: RoadsEnum.colors[type]});
-      // We need to add this line to the database.
-      // Because id auto increments, first send in one row to get an id then add everything else.
-      c0 = coords[0];
-      id = database_insert(table, [ "pindex", "lat", "lon", "line_type" ],
-                           [ [0], [c0.lat()], [c0.lng()], [type] ]);
-      if (id != -1) {
-        var vals = [[], [], [], [], []];
-        for (var i = 1; i < coords.length; i++) {
-          vals[0].push(id);
-          vals[1].push(i);
-          vals[2].push(coords[i].lat());
-          vals[3].push(coords[i].lng());
-          vals[4].push(type);
-        }
-        database_insert(table, [ "id", "pindex", "lat", "lon", "line_type" ],
-                        vals);
-        createWindow.close();
-
-        allRoads.push({
-          road: snappedPolyline,
-          id: id,
-          type: type,
-          table: table,
-          marker: lineMarker,
-        });
-      }
-    }
+    document.getElementById(save_id).onclick = save_fun;
   } else {
     allRoads.push({
       road: snappedPolyline,
@@ -711,17 +728,17 @@ function drawCoordinates(coords, id, type, table) {
     });
   }
 
-  snappedPolyline.addListener('click', function() {
+  var infoWindow = new google.maps.InfoWindow({
+    maxWidth: 200,
+    disableAutoPan: true,
+  });
+  var click_fun = function() {
     var button_id = "delete_line"+id;
-    var infoContent =
+    var infoContent = createContent +
         "<input id=" + button_id + " type=\"button\" value=\"delete\">";
     var promote_id = "promote_marker"+id;
     var promoteButton = "<input id=" + promote_id +
-                      " type=\"button\" value=\"promote\">";
-    var infoWindow = new google.maps.InfoWindow({
-      content: infoContent,
-      maxWidth: 200,
-    });
+                      " type=\"button\" value=\"publish\">";
 
     var viewing = true;
     if (document.getElementById('edit_mode') != null) {
@@ -747,6 +764,9 @@ function drawCoordinates(coords, id, type, table) {
         }
       });
 
+      document.getElementById(save_id).onclick = save_fun;
+      document.getElementById(type_id).value = ReverseRoadsEnum[type];
+
       if (can_promote) {
         document.getElementById(promote_id).addEventListener('click', function () {
           if (id != -1) {
@@ -755,7 +775,6 @@ function drawCoordinates(coords, id, type, table) {
             table = sharrows_table;
             id = database_insert(table, [ "pindex", "lat", "lon", "line_type" ],
                                  [ [0], [c0.lat()], [c0.lng()], [type] ]);
-            console.log(id);
             if (id != -1) {
               var vals = [[], [], [], [], []];
               for (var i = 1; i < coords.length; i++) {
@@ -767,7 +786,6 @@ function drawCoordinates(coords, id, type, table) {
               }
               database_insert(table, [ "id", "pindex", "lat", "lon", "line_type" ],
                               vals);
-              console.log(vals);
               table = sharrows_table;
               var roadData =
                   $.grep(allRoads,
@@ -776,11 +794,15 @@ function drawCoordinates(coords, id, type, table) {
               roadData.table = sharrows_table;
               roadData.marker.setLabel(null);
             }
+            setRoadVisibilities();
           }
         });
       }
     }
-  });
+  };
+
+  snappedPolyline.addListener('click', click_fun);
+  snappedPolyline.addListener('mouseup', click_fun);
 
   return snappedPolyline;
 }
@@ -828,6 +850,10 @@ function shouldShowRoad(road) {
          (isEditRoadsMode() || road.table != sroads_table);
 }
 
+function shouldDragRoad(road) {
+  return isEditRoadsMode() && (isValidUser || road.table == sroads_table);
+}
+
 function setMarkerVisibilities() {
   for (var i in allMarkers) {
     var mark = allMarkers[i];
@@ -840,6 +866,7 @@ function setRoadVisibilities() {
   for (var i in allRoads) {
     var road = allRoads[i];
     road.road.setVisible(shouldShowRoad(road));
+    road.road.setEditable(shouldDragRoad(road));
     road.marker.setVisible(road.road.getVisible());
   }
 }
