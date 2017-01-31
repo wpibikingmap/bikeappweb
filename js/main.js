@@ -454,7 +454,7 @@ function placeMarker(location, id, notes, type, table) {
                     " type=\"button\" value=\"delete\">";
   var promote_id = "promote_marker"+markerInc;
   var promoteButton = "<input id=" + promote_id +
-                    " type=\"button\" value=\"promote\">";
+                    " type=\"button\" value=\"publish\">";
   var info_id = "info_content"+markerInc;
   var infoContent = "<span id='"+info_id+"'></span>"+(notes == null ? "" : notes);
   var infoWindow = new google.maps.InfoWindow({
