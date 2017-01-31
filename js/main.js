@@ -626,7 +626,7 @@ function processSnapToRoadResponse(data) {
 // Draws the snapped polyline (after processing snap-to-road response).
 var lineInc = 0;
 function drawCoordinates(coords, id, type, table) {
-  if (RoadsEnum.colors[type] == null) {
+  if (id != -1 && RoadsEnum.colors[type] == null) {
     return null;
   }
   var snappedPolyline = new google.maps.Polyline({
