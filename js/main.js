@@ -31,6 +31,12 @@ var LocsEnum = {
     3: 'Dangerous Intersection',
     4: 'General Information',
   },
+  show: {
+    1: true,
+    2: true,
+    3: true,
+    4: true,
+  }
 };
 var ReverseLocsEnum = {};
 var RoadsEnum = {
@@ -117,10 +123,6 @@ function initMap() {
   initAutoComplete('end_address');
   var geocoder = new google.maps.Geocoder();
 
-  var control = document.getElementById('legend');
-  populateLegend();
-  map.controls[google.maps.ControlPosition.RIGHT_TOP].push(control);
-
   var drawingManager = new google.maps.drawing.DrawingManager({
     drawingMode: google.maps.drawing.OverlayType.POLYLINE,
     drawingControl: true,
@@ -147,41 +149,14 @@ function initMap() {
   var placingListener;
   if (document.getElementById('edit_mode') != null) {
     document.getElementById('edit_mode').addEventListener('change', function() {
+      setMarkerVisibilities();
+      setRoadVisibilities();
       if (this.value == 'view') {
-        for (var i in allMarkers) {
-          allMarkers[i].marker.setDraggable(false);
-          if (allMarkers[i].table == slocs_table) {
-            allMarkers[i].marker.setVisible(false);
-          }
-        }
-        for (var i in allRoads) {
-          if (allRoads[i].table == sroads_table) {
-            allRoads[i].road.setVisible(false);
-            allRoads[i].marker.setVisible(false);
-          }
-        }
         if (placingListener) {
           placingListener.remove();
         }
         drawingManager.setMap(null);
       } else if (this.value == 'parking') {
-        // Make all markers draggable.
-        for (var i in allMarkers) {
-          var mark = allMarkers[i].marker;
-          if (isValidUser) {
-            mark.setDraggable(true);
-          }
-          if (allMarkers[i].table == slocs_table) {
-            mark.setVisible(true);
-            mark.setDraggable(true);
-          }
-        }
-        for (var i in allRoads) {
-          if (allRoads[i].table == sroads_table) {
-            allRoads[i].road.setVisible(false);
-            allRoads[i].marker.setVisible(false);
-          }
-        }
         // Remove drawer and allow markers to be placed.
         placingListener =
             google.maps.event.addListener(map, 'click', function(event) {
@@ -190,18 +165,6 @@ function initMap() {
             });
         drawingManager.setMap(null);
       } else if (this.value == 'roads') {
-        for (var i in allMarkers) {
-          allMarkers[i].marker.setDraggable(false);
-          if (allMarkers[i].table == slocs_table) {
-            allMarkers[i].marker.setVisible(false);
-          }
-        }
-        for (var i in allRoads) {
-          if (allRoads[i].table == sroads_table) {
-            allRoads[i].road.setVisible(true);
-            allRoads[i].marker.setVisible(true);
-          }
-        }
         if (placingListener) {
           placingListener.remove();
         }
@@ -254,6 +217,7 @@ function initMap() {
         var loc = new google.maps.LatLng(m[1], m[2]);
         placeMarker(loc, m[0], m[3], m[4], parking_table);
       }
+      setMarkerVisibilities();
     }
   });
 
@@ -264,13 +228,17 @@ function initMap() {
       for (var i = 0; i < markers.length; i++) {
         var m = markers[i];
         var loc = new google.maps.LatLng(m[1], m[2]);
-        var mark = placeMarker(loc, m[0], m[3], m[4], slocs_table);
-        mark.setVisible(false);
+        placeMarker(loc, m[0], m[3], m[4], slocs_table);
       }
+      setMarkerVisibilities();
     }
   });
   fetchRoads(sharrows_table, true);
   fetchRoads(sroads_table, false);
+
+  var control = document.getElementById('legend');
+  populateLegend();
+  map.controls[google.maps.ControlPosition.RIGHT_TOP].push(control);
 }
 
 function fetchRoads(table, visible) {
@@ -288,11 +256,6 @@ function fetchRoads(table, visible) {
         var id = row[0];
         if (id != cur_id) {
           var road = drawCoordinates(coords, cur_id, points[i-1][4], table);
-          if (road != null) {
-            road.setVisible(visible);
-            $.grep(allRoads,
-                   function(e){return e.road === road})[0].marker.setVisible(visible);
-          }
           cur_id = id;
           coords = [];
         } else {
@@ -301,9 +264,7 @@ function fetchRoads(table, visible) {
       }
       // Otherwise, the last one doesn't get drawn...
       var road = drawCoordinates(coords, cur_id, points[points.length - 1][4], table);
-      road.setVisible(visible);
-      $.grep(allRoads,
-             function(e){return e.road === road})[0].marker.setVisible(visible);
+      setRoadVisibilities();
     }
   });
 }
@@ -317,7 +278,7 @@ function populateLegend() {
     if (typeof(RoadsEnum[prop]) == "number") {
       var i = RoadsEnum[prop];
       content += "<label class=checkbox-inline>"+
-                 "<input id=show_road"+i+" type=checkbox checked>"+
+                 "<input id=show_road"+i+" type=checkbox "+ (RoadsEnum.show[i] ? "checked" : "") +">"+
                  "<div class='color-box' style='background-color: "+
                  RoadsEnum.colors[i]+"'></div>"+RoadsEnum.desc[i]+"</label><br>";
       roadchecks.push("show_road"+i);
@@ -341,24 +302,20 @@ function populateLegend() {
     var checkbox = document.getElementById(roadchecks[i]);
     checkbox.onclick = function() {
       var name = this.id;
+      // TODO: Support multi-digit types
       var type = name.substr(name.length - 1);
-      var roads = $.grep(allRoads, function(e){ return e.type == type; });
-      for (var j in roads) {
-        var road = roads[j];
-        road.road.setVisible(this.checked);
-      }
+      RoadsEnum.show[type] = this.checked;
+      setRoadVisibilities();
     }
   }
   for (var i in locchecks) {
     var checkbox = document.getElementById(locchecks[i]);
     checkbox.onclick = function() {
       var name = this.id;
+      // TODO: Support multi-digit types
       var type = name.substr(name.length - 1);
-      var locs = $.grep(allMarkers, function(e){ return e.type == type; });
-      for (var j in locs) {
-        var loc = locs[j];
-        loc.marker.setVisible(this.checked);
-      }
+      LocsEnum.show[type] = this.checked;
+      setMarkerVisibilities();
     }
   }
 
@@ -498,6 +455,7 @@ function placeMarker(location, id, notes, type, table) {
     content: createContent,
     maxWidth: 200,
   });
+  var marker_data = {marker : marker, id : id, type : type, table : table};
   var save_fun = function() {
     type = LocsEnum[document.getElementById(type_id).value];
     marker.setIcon(LocsEnum.icons[type]);
@@ -519,12 +477,9 @@ function placeMarker(location, id, notes, type, table) {
     infoContent += notes;
     infoWindow.setContent(deleteButton+infoContent);
     createWindow.close();
-    allMarkers.push({
-      marker: marker,
-      id: id,
-      type: type,
-      table: table,
-    });
+    marker_data.id = id;
+    marker_data.type = type;
+    allMarkers.push(marker_data);
   };
   if (id == -1) {
     createWindow.open(map, marker);
@@ -535,12 +490,9 @@ function placeMarker(location, id, notes, type, table) {
     });
     document.getElementById(save_id).onclick = save_fun;
   } else {
-    allMarkers.push({
-      marker: marker,
-      id: id,
-      type: type,
-      table: table,
-    });
+    marker_data.id = id;
+    marker_data.type = type;
+    allMarkers.push(marker_data);
   }
 
   marker.addListener('click', function() {
@@ -613,7 +565,7 @@ function placeMarker(location, id, notes, type, table) {
     }
   });
 
-  return marker;
+  return marker_data;
 }
 
 function snapToRoad(path) {
@@ -826,4 +778,42 @@ function openMapsUrl() {
   url += "data=!4m2!4m1!3e1"; // Magic numbers to show bicycling directions
 
   window.open(url, "_blank");
+}
+
+function isEditMarkersMode() {
+  return document.getElementById("edit_mode").value == "parking";
+}
+
+function isEditRoadsMode() {
+  return document.getElementById("edit_mode").value == "roads";
+}
+
+function shouldShowMarker(marker) {
+  return LocsEnum.show[marker.type] &&
+         (isEditMarkersMode() || marker.table != slocs_table);
+}
+
+function shouldDragMarker(marker) {
+  return isEditMarkersMode() && (isValidUser || marker.table == slocs_table);
+}
+
+function shouldShowRoad(road) {
+  return RoadsEnum.show[road.type] &&
+         (isEditRoadsMode() || road.table != sroads_table);
+}
+
+function setMarkerVisibilities() {
+  for (var i in allMarkers) {
+    var mark = allMarkers[i];
+    mark.marker.setDraggable(shouldDragMarker(mark));
+    mark.marker.setVisible(shouldShowMarker(mark));
+  }
+}
+
+function setRoadVisibilities() {
+  for (var i in allRoads) {
+    var road = allRoads[i];
+    road.road.setVisible(shouldShowRoad(road));
+    road.marker.setVisible(road.road.getVisible());
+  }
 }
