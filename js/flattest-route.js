@@ -329,7 +329,7 @@ function drawPolyline (elevations, slopes) {
             strokeColor: pathColor,
             strokeOpacity: 0.8,
             strokeWeight: 5,
-            draggable: true
+            draggable: false
         });
         mapPath.setMap(map);
         mapPaths.push(mapPath);
