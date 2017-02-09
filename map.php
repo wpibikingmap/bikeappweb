@@ -20,6 +20,8 @@
           <div class="row">
             <div class="col-md-9">
               <input id="submit" type="button" value="Directions" class="btn btn-primary">
+              <button id="show_help" type="button" class="btn btn-primary" data-toggle="collapse"
+                      data-target="#about-help">About</button>
               <input id="open_maps" type="button" value="Open Directions in Google Maps" class="btn btn-primary hide">
 <?php
 require_once './includes/common.inc';
@@ -48,15 +50,54 @@ if (is_valid_user()) {
         <div class="col-md-3" id="elevation_chart"></div>
         <div class="col-md-3" id="slope_chart"></div>
       </div>
+      <div class="row collapse" id="about-help">
+        <ul>
+          <li>The directions finding for this map is purely based on Google Maps&mdash;when
+              you get directions here they are the same as what you would get on Google Maps
+          </li>
+          <li>The main goal of this map is to add some additional features to make it easier
+              for you to make decisions about what routes to take and where to bike
+              <ul>
+                <li>It shows you the locations of various dangerous spots, bike parking, etc.</li>
+                <li>It provides some visualization so you can see what hills there are along
+                    your route</li>
+              </ul>
+          </li>
+          <li>Anyone can add data to the map by clicking "Add Data".
+          </li>
+        </ul>
+      </div>
       <div class="row">
         <div class="col-md-9">
           <div id="add-data-help" class="hide">
+            <p>
             In order to add data, change the selection from "view" to one of the editing
             modes. You can then create new markers and lines (you can not edit existing ones).
             The new markers/lines will show up with a red "N"; when an administrator has a
             chance to take a look, they will approve any new changes. Any unapproved additions
             made by you or anyone else will also show up with a red "N" and can be editted,
             unlike the permanent ones.
+            </p>
+            <p>
+            The different types of line and markers that you can add are:
+            <ul>
+              <li>Bike Lane: Any sort of traditional bike lane</li>
+              <li>Sharrow: Markings on the road for bikes, but no separate bike lane</li>
+              <li>Risky Road: A road that is particularly risky (high speed, lots of cars merging in/out of traffic, etc.</li>
+              <li>Recreational Ride: Suggestions for relatively good places to ride</li>
+              <li>Bike Lane Suggestions: These do not show up when a typical user views the map;
+                  they are any place where any user thinks that there should be a bike lane.
+                  We will try to put all the suggestions together periodically and show them
+                  to various planning departments
+              </li>
+              <li>Bike Parking: Places where you can easily park your bike. Try to include some sort
+                  of comment specifying what sort of rack it is, whether it is protected from
+                  the weather, etc.</li>
+              <li>Dangerous Intersection: Intersections which are particularly dubious to bike through</li>
+              <li>Bike Shop: Anything that could reasonably be classified as a bike shop (can include any sort of biking organization).</li>
+              <li>Information: Any sort of general information that may be useful</li>
+            </ul>
+            </p>
           </div>
         </div>
       </div>

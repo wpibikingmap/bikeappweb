@@ -10,4 +10,7 @@ function is_valid_user() {
   global $user;
   return key_exists(4, $user->roles);
 }
+function get_userid() {
+  return $user->uid;
+}
 ?>

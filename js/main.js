@@ -60,7 +60,7 @@ var RoadsEnum = {
     3: '#FE32CA', // pink/purple
 //    4: 'red',
     5: 'orange',
-    6: 'purple',
+    6: 'yellow',
   },
   desc: {
     1: 'Bike Lane',
@@ -68,7 +68,7 @@ var RoadsEnum = {
     3: 'Risky Road',
 //    4: 'Highway',
     5: 'Recreational Ride',
-    6: 'Test Color',
+    6: 'Bike lane suggestions',
   },
   show: {
     1: true,
@@ -76,8 +76,16 @@ var RoadsEnum = {
     3: true,
  //   4: false,
     5: false,
-    6: false,
+    6: true,
   },
+  showInViewMode: {
+    // Whether or not to display while in "view" mode.
+    1: true,
+    2: true,
+    3: true,
+    5: true,
+    6: false,
+  }
 };
 function initMap() {
   LocsEnum.icons = {
@@ -255,7 +263,7 @@ function initMap() {
 }
 
 function fetchRoads(table, visible) {
-  database_fetch(table, ["id", "pindex", "lat", "lon", "line_type"], function() {
+  database_fetch(table, ["id", "pindex", "lat", "lon", "line_type", "notes"], function() {
     if (this.readyState == 4 && this.status == 200) {
       var points = JSON.parse(this.responseText);
       // Sort by id and index.
@@ -263,16 +271,19 @@ function fetchRoads(table, visible) {
                                                        : (a[0] - b[0])});
       if (points.length == 0) return;
       var cur_id = points[0][0];
+      var notes = "";
       var coords = [];
       for (var i = 0; i < points.length; i++) {
         var row = points[i];
         var id = row[0];
         if (id != cur_id) {
-          var road = drawCoordinates(coords, cur_id, points[i-1][4], table);
+          var road = drawCoordinates(coords, cur_id, points[i-1][4], table, notes);
           cur_id = id;
           coords = [];
+          notes = "";
         }
         coords.push(new google.maps.LatLng(row[2], row[3]));
+        notes += row[5];
       }
       // Otherwise, the last one doesn't get drawn...
       var road = drawCoordinates(coords, cur_id, points[points.length - 1][4], table);
@@ -289,7 +300,7 @@ function populateLegend() {
   for (var prop in RoadsEnum) {
     if (typeof(RoadsEnum[prop]) == "number") {
       var i = RoadsEnum[prop];
-      content += "<label class=checkbox-inline>"+
+      content += "<label class=\"checkbox-inline "+ (RoadsEnum.showInViewMode[i] ? "" : "hide") + "\">" +
                  "<input id=show_road"+i+" type=checkbox "+ (RoadsEnum.show[i] ? "checked" : "") +">"+
                  "<div class='color-box' style='background-color: "+
                  RoadsEnum.colors[i]+"'></div>"+RoadsEnum.desc[i]+"</label><br>";
@@ -611,7 +622,7 @@ function snapToRoad(path) {
       }, function(data) {
         var snappedCoordinates = processSnapToRoadResponse(data);
         drawCoordinates(snappedCoordinates, -1, -1,
-                        isValidUser ? sharrows_table : sroads_table);
+                        isValidUser ? sharrows_table : sroads_table, "");
       });
 }
 
@@ -629,7 +640,7 @@ function processSnapToRoadResponse(data) {
 
 // Draws the snapped polyline (after processing snap-to-road response).
 var lineInc = 0;
-function drawCoordinates(coords, id, type, table) {
+function drawCoordinates(coords, id, type, table, notes) {
   if (id != -1 && RoadsEnum.colors[type] == null) {
     return null;
   }
@@ -705,6 +716,7 @@ function drawCoordinates(coords, id, type, table) {
         type: type,
         table: table,
         marker: lineMarker,
+        notes: notes,
       });
     }
     setRoadVisibilities();
@@ -725,6 +737,7 @@ function drawCoordinates(coords, id, type, table) {
       type: type,
       table: table,
       marker: lineMarker,
+      notes: notes,
     });
   }
 
@@ -847,7 +860,7 @@ function shouldDragMarker(marker) {
 
 function shouldShowRoad(road) {
   return RoadsEnum.show[road.type] &&
-         (isEditRoadsMode() || road.table != sroads_table);
+         (isEditRoadsMode() || (RoadsEnum.showInViewMode[road.type] && road.table != sroads_table));
 }
 
 function shouldDragRoad(road) {
