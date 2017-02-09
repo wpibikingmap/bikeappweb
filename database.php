@@ -29,7 +29,7 @@ $valid_user = is_valid_user();
 # If they are not a valid user, then they can only:
 # -do fetch actions OR
 # -do insert/delete actions on specifically allowed tables
-$allowed_tables = ['suggested_locations', 'suggested_roads'];
+$allowed_tables = ['suggested_locations', 'suggested_roads', 'votes'];
 if (!$valid_user) {
   if ($action != "fetch") {
     if (!in_array($table, $allowed_tables)) {
@@ -43,36 +43,55 @@ if (!$valid_user) {
 // as every other possible field.
 if ($action == "insert") {
   $arraylen = count($keys);
-  if ($arraylen > 0) {
-    $format_str = "(";
-    $val_array = array();
-    for ($i = 0; $i < $arraylen; $i++) {
-      $format_str .= $conn->real_escape_string($keys[$i]). ",";
-      $new_val = json_decode($_REQUEST[$keys[$i]]);
-      array_push($val_array, $new_val);
+  $format_str = "(";
+  $val_array = array();
+  for ($i = 0; $i < $arraylen; $i++) {
+    $format_str .= $conn->real_escape_string($keys[$i]). ",";
+    $new_val = json_decode($_REQUEST[$keys[$i]]);
+    array_push($val_array, $new_val);
+  }
+  $format_str = rtrim($format_str, ',');
+  $format_str .= ")";
+  $val_str = "";
+  // TODO(james): Do something about possibilities of different length arrays.
+  for ($i = 0; $i < count($val_array[0]); $i++) {
+    $val_str .= "(\"". $conn->real_escape_string($val_array[0][$i]). "\"";
+    for ($j = 1; $j < count($val_array); $j++) {
+      $val_str .= ",\"". $conn->real_escape_string($val_array[$j][$i]). "\"";
     }
-    $format_str = rtrim($format_str, ',');
-    $format_str .= ")";
+    $val_str .= "),";
+  }
+  $val_str = rtrim($val_str, ',');
+  if ($val_str == "") {
+    $val_str = "()";
+  }
+  $sql = "insert into $table $format_str values $val_str";
+  if ($conn->query($sql) === TRUE) {
+    $get_id_sql = "select id from $table order by id desc limit 1";
+    $result = $conn->query($get_id_sql);
+    $id = $result->fetch_row()[0];
+    // TODO(james): List all the IDs for inserting multiple rows.
+    // TODO(james): Currently, not thread-safe. If a new row is inserted
+    // before we check it, then we have an issue.
+    echo "$id";
+  } else {
+    echo "Failed to perform query: ". $sql. "<br>";
+    var_dump($sql);
+  }
+} else if ($action == "update") {
+  $cond_string = $conn->real_escape_string($_REQUEST['where']);
+  delete_val($keys, 'where');
+  $arraylen = count($keys);
+  if ($arraylen > 0) {
     $val_str = "";
-    // TODO(james): Do something about possibilities of different length arrays.
-    for ($i = 0; $i < count($val_array[0]); $i++) {
-      $val_str .= "(\"". $conn->real_escape_string($val_array[0][$i]). "\"";
-      for ($j = 1; $j < count($val_array); $j++) {
-        $val_str .= ",\"". $conn->real_escape_string($val_array[$j][$i]). "\"";
-      }
-      $val_str .= "),";
+    for ($i = 0; $i < $arraylen; $i++) {
+      $val_str .= $conn->real_escape_string($keys[$i]). " = " .
+                  $conn->real_escape_string($_REQUEST[$keys[$i]]) . ",";
     }
     $val_str = rtrim($val_str, ',');
-    $sql = "insert into $table $format_str values $val_str";
-    if ($conn->query($sql) === TRUE) {
-      $get_id_sql = "select id from $table order by id desc limit 1";
-      $result = $conn->query($get_id_sql);
-      $id = $result->fetch_row()[0];
-      // TODO(james): List all the IDs for inserting multiple rows.
-      // TODO(james): Currently, not thread-safe. If a new row is inserted
-      // before we check it, then we have an issue.
-      echo "$id";
-    } else {
+    $val_str .= "";
+    $sql = "update $table set $val_str where $cond_string";
+    if ($conn->query($sql) === FALSE) {
       echo "Failed to perform query: ". $sql. "<br>";
       var_dump($sql);
     }

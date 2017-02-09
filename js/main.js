@@ -1,6 +1,8 @@
+// Welcome to a bunch o' spaghetti. Have fun.
 var geocoded = false;
 var parking_table ='locations';
 var sharrows_table ='roads';
+var vote_table ='votes';
 var slocs_table ='suggested_locations';
 var sroads_table ='suggested_roads';
 // For type ids for various things (which show up in the database tables), we
@@ -17,6 +19,7 @@ var suggestedLabel = {
 };
 var allMarkers = [];
 var allRoads = [];
+var allVotes = {}; // Each element is indexed at id, contains {up:, down:}.
 var isValidUser = false;
 var pathColors = {
   5 : "#3CB371",
@@ -229,6 +232,15 @@ function initMap() {
 
   document.getElementById("open_maps").onclick = openMapsUrl;
 
+  database_fetch(vote_table, [ "id", "upvotes", "downvotes" ], function() {
+    if (this.readyState == 4 && this.status == 200) {
+      var raw = JSON.parse(this.responseText);
+      for (var i = 0; i < raw.length; i++) {
+        allVotes[raw[i][0]] = {up : raw[i][1], down : raw[i][2]};
+      }
+    }
+  });
+
   database_fetch(parking_table, [ "id", "lat", "lon", "notes", "loc_type" ], function() {
     if (this.readyState == 4 && this.status == 200) {
       // TODO(james): Cleanly handle no response text.
@@ -416,6 +428,17 @@ function database_insert(table, cols, vals) {
   return id;
 }
 
+function database_update(table, where_cond, vals) {
+  var xmlhttp = new XMLHttpRequest();
+  xmlhttp.onreadystatechange = function() {};
+  var get_str = "database.php?action=update&table=" + table + "&where=" + where_cond;
+  for (var i in vals) {
+    get_str += "&" + i + "=" + String(vals[i]).replace(/\+/g, "%2B");
+  }
+  xmlhttp.open("GET", get_str, true);
+  xmlhttp.send();
+}
+
 function geocodeAddress(geocoder, resultsMap, field_name, marker, m1, m2, disp, serv) {
   var address = document.getElementById(field_name).value;
   geocoder.geocode({'address': address, 'bounds': resultsMap.getBounds()}, function(results, status) {
@@ -451,6 +474,44 @@ function displayRoute(origin, destination, service, display) {
       alert('Could not display directions due to: ' + status);
     }
   });
+}
+
+// The number id; boolean true if upvote, false if down; update_element is the element id to write the new vote to
+function handleUserVote(id, is_up, update_element) {
+  var button_id = (is_up ? "upvote" : "downvote") + id;
+  if ($("#" + button_id).hasClass("disabled")) {
+    return;
+  }
+  var cur_vote = parseInt($("#"+update_element).html());
+  database_update(vote_table, "id = " + id, is_up ? {upvotes: "upvotes + 1"} : {downvotes: "downvotes + 1"});
+  cur_vote += 1;
+  $("#" + update_element).html(String(cur_vote));
+  if (is_up) {
+    allVotes[id].up = cur_vote;
+  } else {
+    allVotes[id].down = cur_vote;
+  }
+  // Force them to reopen the dialog
+  $("#" + button_id).addClass("disabled");
+}
+
+// Constructs the HTML for being able to vote
+// viewing = true or false, depending on whether the user can vote
+function constructVotingHTML(id, viewing) {
+  var up_button_id = "upvote" + id;
+  var down_button_id = "downvote" + id;
+  var up_cnt_id = "upcount" + id;
+  var down_cnt_id = "downcount" + id;
+  var up_btn_html = "<button class=\"btn btn-success btn-xs\" id=\"" + up_button_id + "\" onclick=\"" +
+                    "handleUserVote(" + id + ", " + true + ", \'" + up_cnt_id + "\')\">Up-Vote</button>";
+  var down_btn_html = "<button class=\"btn btn-danger btn-xs\" id=\"" + down_button_id + "\" onclick=\"" +
+                    "handleUserVote(" + id + ", " + false + ", \'" + down_cnt_id + "\')\">Down-Vote</button>";
+  var up_cnt_html = "<span id=\"" + up_cnt_id + "\">" + allVotes[id].up + "</span>";
+  var down_cnt_html = "<span id=\"" + down_cnt_id + "\">" + allVotes[id].down + "</span>";
+  var view_html = "Up-Votes: " + up_cnt_html + " Down-Votes: " + down_cnt_html;
+  var edit_html = up_btn_html + " " + up_cnt_html + " " + down_btn_html + " " + down_cnt_html;
+  var html = viewing ? view_html : edit_html;
+  return html;
 }
 
 var markerInc = 0;
@@ -509,7 +570,9 @@ function placeMarker(location, id, notes, type, table) {
       }
       database_remove(table, id);
     }
-    id = database_insert(table, [ "lat", "lon", "notes", "loc_type" ], [
+    id = database_insert(vote_table, [], []);
+    database_insert(table, [ "id", "lat", "lon", "notes", "loc_type" ], [
+      [id],
       [location.lat()],
       [location.lng()],
       [notes],
@@ -563,7 +626,8 @@ function placeMarker(location, id, notes, type, table) {
     } else {
       infoWindow.close();
       createWindow.setContent(createContent + deleteButton +
-                              (can_promote ? promoteButton : ""));
+                              (can_promote ? promoteButton : "") + "<br>" +
+                              constructVotingHTML(id, false));
       createWindow.open(map, this);
       document.getElementById(content_id).value = notes;
       document.getElementById(type_id).value = ReverseLocsEnum[type];
@@ -572,13 +636,15 @@ function placeMarker(location, id, notes, type, table) {
         marker.setMap(null);
         if (id != -1) {
           database_remove(table, id);
+          database_remove(vote_table, id);
         }
       });
       if (can_promote) {
         document.getElementById(promote_id).addEventListener('click', function () {
           database_remove(table, id);
-          id = database_insert(parking_table,
-                               [ "lat", "lon", "notes", "loc_type" ], [
+          database_insert(parking_table,
+                               [ "id", "lat", "lon", "notes", "loc_type" ], [
+            [id],
             [marker.getPosition().lat()],
             [marker.getPosition().lng()],
             [notes],
@@ -692,14 +758,10 @@ function drawCoordinates(coords, id, type, table, notes) {
       database_remove(table, id);
     }
     var vertices = snappedPolyline.getPath();
-    // We need to add this line to the database.
-    // Because id auto increments, first send in one row to get an id then add everything else.
-    c0 = vertices.getAt(0);
-    id = database_insert(table, [ "pindex", "lat", "lon", "line_type" ],
-                         [ [0], [c0.lat()], [c0.lng()], [type] ]);
+    id = database_insert(vote_table, [], []);
     if (id != -1) {
       var vals = [[], [], [], [], []];
-      for (var i = 1; i < vertices.getLength(); i++) {
+      for (var i = 0; i < vertices.getLength(); i++) {
         vals[0].push(id);
         vals[1].push(i);
         vals[2].push(vertices.getAt(i).lat());
@@ -762,10 +824,11 @@ function drawCoordinates(coords, id, type, table, notes) {
     }
     var can_promote = isValidUser && table == sroads_table;
     if (!viewing) {
+      var voteContent = "<br>" + constructVotingHTML(id, false);
       if (can_promote) {
-        infoWindow.setContent(infoContent + promoteButton);
+        infoWindow.setContent(infoContent + promoteButton + voteContent);
       } else {
-        infoWindow.setContent(infoContent);
+        infoWindow.setContent(infoContent + voteContent);
       }
       infoWindow.open(map, lineMarker);
       document.getElementById(button_id).addEventListener('click', function () {
@@ -774,6 +837,7 @@ function drawCoordinates(coords, id, type, table, notes) {
         lineMarker.setMap(null);
         if (id != -1) {
           database_remove(table, id);
+          database_remove(vote_table, id);
         }
       });
 
@@ -784,29 +848,24 @@ function drawCoordinates(coords, id, type, table, notes) {
         document.getElementById(promote_id).addEventListener('click', function () {
           if (id != -1) {
             database_remove(table, id);
-            c0 = coords[0];
             table = sharrows_table;
-            id = database_insert(table, [ "pindex", "lat", "lon", "line_type" ],
-                                 [ [0], [c0.lat()], [c0.lng()], [type] ]);
-            if (id != -1) {
-              var vals = [[], [], [], [], []];
-              for (var i = 1; i < coords.length; i++) {
-                vals[0].push(id);
-                vals[1].push(i);
-                vals[2].push(coords[i].lat());
-                vals[3].push(coords[i].lng());
-                vals[4].push(type);
-              }
-              database_insert(table, [ "id", "pindex", "lat", "lon", "line_type" ],
-                              vals);
-              table = sharrows_table;
-              var roadData =
-                  $.grep(allRoads,
-                         function(e) { return e.road === snappedPolyline; })[0];
-              roadData.id = id;
-              roadData.table = sharrows_table;
-              roadData.marker.setLabel(null);
+            var vals = [[], [], [], [], []];
+            for (var i = 0; i < coords.length; i++) {
+              vals[0].push(id);
+              vals[1].push(i);
+              vals[2].push(coords[i].lat());
+              vals[3].push(coords[i].lng());
+              vals[4].push(type);
             }
+            database_insert(table, [ "id", "pindex", "lat", "lon", "line_type" ],
+                            vals);
+            table = sharrows_table;
+            var roadData =
+                $.grep(allRoads,
+                       function(e) { return e.road === snappedPolyline; })[0];
+            roadData.id = id;
+            roadData.table = sharrows_table;
+            roadData.marker.setLabel(null);
             setRoadVisibilities();
           }
         });
