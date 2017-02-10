@@ -571,6 +571,7 @@ function placeMarker(location, id, notes, type, table) {
       database_remove(table, id);
     }
     id = database_insert(vote_table, [], []);
+    allVotes[id] = {up: 0, down: 0};
     database_insert(table, [ "id", "lat", "lon", "notes", "loc_type" ], [
       [id],
       [location.lat()],
@@ -759,6 +760,7 @@ function drawCoordinates(coords, id, type, table, notes) {
     }
     var vertices = snappedPolyline.getPath();
     id = database_insert(vote_table, [], []);
+    allVotes[id] = {up: 0, down: 0};
     if (id != -1) {
       var vals = [[], [], [], [], []];
       for (var i = 0; i < vertices.getLength(); i++) {
