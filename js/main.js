@@ -1,4 +1,5 @@
 // Welcome to a bunch o' spaghetti. Have fun.
+// See https://docs.google.com/document/d/1RnK6cNr9uUIWaiiOsIdOzKCjXmKY834luh3LB9z2GOs/edit#
 var geocoded = false;
 var parking_table ='locations';
 var sharrows_table ='roads';
