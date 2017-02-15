@@ -26,6 +26,6 @@ body, html {
   overflow-y: auto;
   max-height: 65vh;
 }
-.row {
-  margin: .5em;
+.row, .btn {
+  margin: 2px;
 }

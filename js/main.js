@@ -168,6 +168,7 @@ function initMap() {
       $("#add_data").addClass("hide");
       $("#edit_mode").removeClass("hide");
       $("#add-data-help").removeClass("hide");
+      $("#about-help").collapse();
     };
   }
 
