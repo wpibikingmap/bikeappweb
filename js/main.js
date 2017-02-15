@@ -79,7 +79,7 @@ var RoadsEnum = {
     2: true,
     3: true,
  //   4: false,
-    5: false,
+    5: true,
     6: true,
   },
   showInViewMode: {
