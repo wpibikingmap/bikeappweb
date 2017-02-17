@@ -68,7 +68,7 @@ var RoadsEnum = {
   },
   desc: {
     1: 'Bike Lane',
-    2: 'Sharrow',
+    2: 'Sharrow<br>(ie, bike markings on roads)',
     3: 'Risky Road',
 //    4: 'Highway',
     5: 'Recreational Ride',
