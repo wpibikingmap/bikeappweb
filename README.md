@@ -4,46 +4,45 @@ See http://bikemap.wpi.edu/drupal7/?q=node/1
 
 ## Map
 
+See the [User Manual](https://docs.google.com/document/d/1KfG-3zKTlq3rmvSNuxkPZQ3wR86Arn6HSODLmGciY7g/edit?usp=drive_web)
+for information on how to _use_ the map.
+
+See the [Technical Documentation](https://docs.google.com/document/d/1RnK6cNr9uUIWaiiOsIdOzKCjXmKY834luh3LB9z2GOs/edit?usp=drive_web)
+for information on how we designed/programmed the map (and website).
+
 For the map, some inspiration was gained from https://www.flattestroute.com
 
-### Usage
+## TODO
 
-In order to use the map, you fill in your origin and destination in the text fields in the control area and click the "Directions" button.
-
-Directions will appear in the right sidebar and if there are multiple options for routes, you can select them in the top of the sidebar.
-
-You can change which layer from Google is displayed by selecting show traffic/bicycling. These will show google's traffic and
-bicycling data.
-
-Selecting "Show Elevation Lines" will show Google's topographical layer.
-
-Clicking on the "Legend" button will show/display the legend.
-
-When you get directions, the directions will be colored to correspond to
-steepness of grade. green=least steep, red=very steep, black=max steepness.
-Black mostly shows up in rather extreme locations (eg, George Street).
-
-When you are on the map that allows for editting (password-protected), then you can add/remove
-markers and lines. I do not elaborate on those here.
-
-### TODO
-
+ - See our [TODO list](https://docs.google.com/document/d/1hN95lKGK0LczzeK5_hWgq97AfTlux55bWj3nmAkd2xw/edit?usp=drive_web)
  - General code cleanup
- - Make the UI nice and understandable
- - Allow moving of parking icons (currently you can move them but they don't save).
- - Authentication on database access (to prevent anyone from adding/removing points)
- - Make a separate save button so that if someone screws up they don't accidentally
-   mess up the master record.
- - Maybe an undo as well? That might be more difficult.
- - Rather than deleting on click, make everything expand to show some information
-   on the feature and maybe include buttons for deleting and the such. Eg, when
-   you click on parking icons, it pops up a brief description and maybe a picture
-   of the parking.
- - Provide more explanation/data for the terrain component.
+ - Consider refactoring into a drupal module so that the map can be included inside the main website
+ - See our [scripts](https://github.com/wpibikingmap/scripts) repository for some of the scripts run on the server
 
- - Make the roads disappear if not saved.
- - Better (any) security
+## Files
 
-### Reminders/Notes
+ - `*.html` redirect to `map.php`
+ - `map.php` The page that the user goes to to see the map itself
+ - `setup.sql` SQL statements to create the tables required for this all to run
+ - `empty.png` A convenient transparent image that's used in a couple places
+ - `css/main.css` The CSS for `map.php` Nothing too fancy
+ - `includes/common.inc` PHP for validating users using Drupal
+ - `js/flattest-route.js` Slightly modified code from [Flattest Route](https://github.com/Zivi/FlattestRoute)
+ - `js/main.js` The majority of our website code
+ - `database.php` An interface with the MySQL database that stores all the map information
 
- - When implementing authentication, refactor things to make it a Drupal module.
+## Notes
+
+Currently, the Map itself accesses the Google Maps API through a free key from Google. If the website
+gets to be used too much, then it may require a paid key, although I doubt we will reach that point
+any time soon.
+
+See the [Google Maps API Reference](https://developers.google.com/maps/documentation/javascript/3.exp/reference)
+for some more information on their API, and for information on how to get an API Key.
+
+In order to deploy the code, be sure to check the database settings in the top of `database.php`--at a minimum,
+you will need to fill out a password, and unless you have our exact settings, you will need to
+modify some other stuff.
+
+If you are running on a server other than `bikemap.wpi.edu`, you may need to change some places where
+it references `bikemap.wpi.edu` (eg, in `includes/common.inc`).
